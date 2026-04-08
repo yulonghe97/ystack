@@ -27,10 +27,14 @@ Identify which module(s) this feature belongs to.
 2. If no config exists or no match found, scan the docs directory structure:
    ```bash
    # Find docs root — check common locations
-   ls docs/src/content/_meta.ts 2>/dev/null || ls docs/_meta.ts 2>/dev/null || ls content/_meta.ts 2>/dev/null
+   # Nextra: docs/src/content/
+   # Fumadocs: content/docs/
+   ls docs/src/content/_meta.ts 2>/dev/null || ls content/docs/meta.json 2>/dev/null || ls docs/_meta.ts 2>/dev/null
    ```
 
-3. Read the top-level `_meta.ts` to understand what modules exist.
+3. Read the navigation config to understand what modules exist:
+   - Nextra: `_meta.ts` files (object keys = sidebar order)
+   - Fumadocs: `meta.json` files or frontmatter-based ordering
 
 4. Match the user's feature description to a module. If ambiguous, ask:
    > This could belong to **Payments** or **Managed Ads**. Which module should this feature live in?

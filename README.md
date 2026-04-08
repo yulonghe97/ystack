@@ -57,7 +57,7 @@ The harness also includes [agent linting](./LINTING.md) — rules that check age
 
 | Layer | Role | Owned by |
 |-------|------|----------|
-| **Docs** | What the system IS. The spec an AI reads, the reference your team reads, the contract between modules. Written once, serves all three. | Nextra / MDX |
+| **Docs** | What the system IS. The spec an AI reads, the reference your team reads, the contract between modules. Written once, serves all three. | Nextra, Fumadocs, or any MDX framework |
 | **Beads** | The development state machine. What's built, what's in progress, what's blocked. Persistent memory that survives context resets. | Beads (`bd`) |
 | **Code** | The implementation. Doesn't need to explain itself — the architecture lives in docs, the progress lives in Beads. | Your repo |
 

@@ -36,7 +36,7 @@ AI agents work better with clean, structured prose than with machine-generated m
 - **Navigable structure** — headings, sections, and cross-references let the agent find exactly what's relevant
 - **Accurate mental model** — prose written for humans forces clarity that JSON schemas don't
 
-This is why ystack uses Nextra (or any markdown documentation framework). The docs are rendered as a real documentation site that humans browse. The same markdown files are what AI agents read as context. The format that's good for humans turns out to be good for agents too.
+This is why ystack works with documentation frameworks like Nextra and Fumadocs. The docs are rendered as a real documentation site that humans browse. The same markdown files are what AI agents read as context. The format that's good for humans turns out to be good for agents too.
 
 The alternative — generating machine-readable context files, planning artifacts, or structured metadata — creates information that's useful to nobody except the tool that generated it. It rots quickly, nobody maintains it, and it bloats agent context with noise.
 
@@ -65,7 +65,7 @@ A module overview page should link to:
 
 When an agent reads a module page and finds a reference to another module, it can follow that link to understand the boundary. This is how agents build understanding incrementally — by navigating a graph of connected documents, not by receiving a monolithic context dump.
 
-The navigation structure (`_meta.ts` files in Nextra) defines the hierarchy. Cross-references within page content define the graph. Together they create a documentation site that works as both a human-readable reference and an agent-navigable knowledge base.
+The navigation structure (framework-specific: `_meta.ts` in Nextra, `meta.json` in Fumadocs) defines the hierarchy. Cross-references within page content define the graph. Together they create a documentation site that works as both a human-readable reference and an agent-navigable knowledge base.
 
 ## The Module Registry
 

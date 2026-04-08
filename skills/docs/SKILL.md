@@ -77,8 +77,9 @@ For each affected doc page, update ONLY the sections impacted by the new feature
 
 ## Phase 3: Update Navigation
 
-If you created a new doc page, add it to the relevant `_meta.ts`:
+If you created a new doc page, update the navigation config for the docs framework in use:
 
+**Nextra** — add to `_meta.ts`:
 ```typescript
 // docs/src/content/<module>/_meta.ts
 export default {
@@ -87,6 +88,16 @@ export default {
   "new-page": "New Page",        // ← add here, object key order = sidebar order
 };
 ```
+
+**Fumadocs** — add to `meta.json` or use frontmatter ordering:
+```json
+// content/docs/<module>/meta.json
+{
+  "pages": ["index", "existing-page", "new-page"]
+}
+```
+
+Check `ystack.config.json` `docs.framework` to know which format to use.
 
 ## Phase 4: Update Structural Files
 

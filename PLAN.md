@@ -110,7 +110,7 @@ The bridge between code, docs, and Beads. Lives in `ystack.config.json`:
   },
   "docs": {
     "root": "docs/src/content",
-    "framework": "nextra"
+    "framework": "nextra"  // or "fumadocs"
   },
   "monorepo": {
     "enabled": true,
@@ -507,7 +507,7 @@ Nothing is lost. Decisions get written into bead notes during execution. Outcome
 ## Open Questions
 
 1. **Beads version** — minimum `bd` version to depend on?
-2. **Docs framework** — start Nextra-native, generalize to any markdown later?
+2. ~~**Docs framework**~~ — supports Nextra and Fumadocs via docs adapter.
 3. **Parallel execution** — should `/go` parallelize independent tasks from day 1?
 4. **Linear sync** — use Beads `--external-ref linear:LIN-123` by default?
 5. **Import depth** — how deep should `/import` analyze? Function-level or module-level?

@@ -22,6 +22,10 @@ npx ystack create my-app --from plan.md
 
 # With options
 npx ystack create my-app --from plan.md --runtime claude-code --runtime cursor
+
+# Choose docs framework (default: nextra)
+npx ystack create my-app --docs nextra
+npx ystack create my-app --docs fumadocs
 ```
 
 ### What Gets Created
@@ -68,7 +72,7 @@ my-app/
 | **Turborepo** | Latest | Monorepo task orchestration — build, typecheck, lint across packages |
 | **pnpm** | Latest | Package management with workspace support |
 | **Ultracite** | Latest | Code linting and formatting (Biome under the hood) |
-| **Nextra 4** | Latest | Documentation site — App Router, MDX, renders docs as browsable site |
+| **Nextra 4** or **Fumadocs** | Latest | Documentation site — App Router, MDX, renders docs as browsable site. Nextra is the default; use `--docs fumadocs` for Fumadocs. |
 | **TypeScript** | 5.8+ | Strict mode, project references |
 | **Beads** | Latest | Persistent memory — task graph, session state, cross-session continuity |
 
@@ -189,7 +193,7 @@ npx ystack init --skills-only
 
 1. **Detect environment:**
    - Monorepo? (Turborepo, Nx, Lerna, plain workspaces)
-   - Docs framework? (Nextra, Docusaurus, VitePress, plain markdown)
+   - Docs framework? (Nextra, Fumadocs, Docusaurus, VitePress, plain markdown)
    - Linter? (Ultracite/Biome, ESLint, none)
    - AI runtimes? (Claude Code, Cursor, Copilot, etc.)
 

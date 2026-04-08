@@ -162,20 +162,31 @@ Create the documentation skeleton. Each module gets an overview page with stubs.
 
 ### Docs directory structure
 
+Read `ystack.config.json` `docs.framework` to determine the structure. If no config exists, detect from the project.
+
+**Nextra:**
 ```
 docs/src/content/
-├── _meta.ts                    # Top-level navigation (create or update)
-├── index.mdx                   # Project home page with architecture diagram
+├── _meta.ts                    # Top-level navigation
+├── index.mdx                   # Project home page
 ├── <module-a>/
 │   ├── _meta.ts                # Module navigation
 │   └── index.mdx               # Module overview
-├── <module-b>/
-│   ├── _meta.ts
-│   └── index.mdx
 └── ...
 ```
 
-If the docs directory doesn't exist yet, note that it needs to be created with the Nextra setup (handled by `npx ystack create`, not this skill).
+**Fumadocs:**
+```
+content/docs/
+├── meta.json                   # Top-level navigation
+├── index.mdx                   # Project home page
+├── <module-a>/
+│   ├── meta.json               # Module navigation
+│   └── index.mdx               # Module overview
+└── ...
+```
+
+If the docs directory doesn't exist yet, note that it needs to be created with the Nextra/Fumadocs setup (handled by `npx ystack create`, not this skill).
 
 If the docs directory already exists, merge with existing content — don't overwrite.
 
@@ -205,16 +216,24 @@ If the docs directory already exists, merge with existing content — don't over
 ...
 ```
 
-### Top-level `_meta.ts`
+### Top-level navigation
 
+**Nextra** (`_meta.ts`):
 ```typescript
 export default {
   index: { title: "Home" },
   "---modules": { type: "separator", title: "Modules" },
   "<module-a-slug>": "<Module A Display Name>",
   "<module-b-slug>": "<Module B Display Name>",
-  ...
 };
+```
+
+**Fumadocs** (`meta.json`):
+```json
+{
+  "title": "<Project Name>",
+  "pages": ["index", "<module-a-slug>", "<module-b-slug>"]
+}
 ```
 
 Order modules logically: apps first, then packages, or by dependency order (upstream first).
@@ -260,12 +279,20 @@ For each module, generate a stub overview:
 *Detail pages for each sub-module will be created as features are implemented.*
 ```
 
-### Module `_meta.ts`
+### Module navigation
 
+**Nextra** (`_meta.ts`):
 ```typescript
 export default {
   index: "Overview",
 };
+```
+
+**Fumadocs** (`meta.json`):
+```json
+{
+  "pages": ["index"]
+}
 ```
 
 Sub-module pages are NOT created yet — just the overview with a stub table. Pages get created by `/docs` as features are built and verified.
