@@ -1,26 +1,49 @@
 # ystack
 
-AI-native development harness — doc-driven workflows, structured context, and composable skills for Claude Code.
+Doc-driven workflow orchestration for AI coding agents, built on top of [Beads](https://github.com/gastownhall/beads).
 
-## What is this?
+## Why?
 
-ystack is a set of Claude Code skills and hooks that turn documentation into the operating system for AI-assisted development. Instead of treating docs as an afterthought, ystack makes your documentation site the single source of truth that AI reads, follows, and keeps in sync.
+**Beads** gives AI agents persistent memory — task graphs, structured notes, session protocols. But it doesn't know about your documentation, can't orchestrate multi-step execution with fresh context per agent, and doesn't verify code matches the spec.
 
-**Core ideas:**
+**GSD** solves orchestration — goal-backward verification, plans-as-prompts, wave-based execution. But it's 65 commands with its own requirements system, disconnected from your docs.
 
-1. **Docs are the spec** — AI reads your docs to understand what to build, then updates them when done
-2. **Structured context survives compaction** — `.context/` files persist across sessions so you never lose your place
-3. **Composable skills** — small, focused skills that chain together into workflows
+**ystack** bridges the gap:
+
+| Layer | Tool | Role |
+|-------|------|------|
+| Persistent memory | **Beads** (`bd`) | Task graph, dependencies, session state, cross-session continuity |
+| Workflow orchestration | **ystack** | Doc-driven intake, execution planning, goal-backward verification, shipping |
+| Your project | Existing skills | `pr-draft`, `docs-update`, `commit` — ystack chains into these |
+
+## Core Ideas
+
+1. **Docs are the spec** — AI reads your Nextra/MDX docs to understand what to build, then keeps them in sync
+2. **Beads is the memory** — task state, dependencies, structured notes all live in `bd`, not reinvented markdown
+3. **Fresh context per agent** — subagents get clean context windows, preventing quality degradation
 4. **Goal-backward verification** — check "what must be TRUE" not "what tasks ran"
-5. **Fresh context per agent** — subagents get clean context windows, preventing quality degradation
+5. **Assumptions over Q&A** — surface "here's what I'd do" and let you correct, instead of 20 questions
 
-## Inspiration
+## Skills
 
-Built on ideas from:
+| Skill | Purpose |
+|-------|---------|
+| `/prime` | Session start — reads `bd ready` + git log, shows where you are |
+| `/kickoff` | Task intake — reads docs + code, surfaces assumptions, creates beads |
+| `/plan` | Creates execution plan with goal-backward success criteria |
+| `/execute` | Runs plan with per-task atomic commits and fresh subagents |
+| `/verify` | Checks codebase against success criteria (distrusts summaries) |
+| `/quick` | Lightweight path — one bead, inline execution, no subagents |
+| `/next` | Computes ready front, routes to next action |
+| `/discover` | Captures side-quest work with provenance (`discovered-from`) |
+| `/ship` | Chains: verify → audit-docs → pr-draft → create PR |
+| `/review` | Code review against project rules and design guide |
 
-- [GSD (Get Shit Done)](https://github.com/gsd-build/get-shit-done) — context rot prevention, goal-backward verification, wave-based execution
-- [Beads](https://github.com/gastownhall/beads) — persistent memory, structured notes, session protocols, ready fronts
-- HellYeah — doc-driven development, monorepo-aware skills, Nextra as source of truth
+## Prerequisites
+
+- [Beads](https://github.com/gastownhall/beads) (`bd`) installed and initialized
+- [Claude Code](https://claude.ai/code) with skills support
+- A project with documentation (Nextra/MDX preferred, any markdown works)
 
 ## Status
 
