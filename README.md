@@ -55,6 +55,62 @@ Existing project:
   repo → /import → /build → /go → /review → /docs → /pr
 ```
 
+## Team Collaboration
+
+ystack is designed for teams where multiple developers (and their agents) work on the same repo simultaneously.
+
+### What's shared
+
+Everything that matters is committed and shared via git:
+
+| Artifact | How it's shared | What the team sees |
+|----------|----------------|-------------------|
+| **Docs** (`docs/`) | Git | The current state of every module — architecture, contracts, data models |
+| **Beads** (`.beads/`) | Dolt (synced via git refs) | Who's working on what, what's done, what's blocked, structured notes |
+| **Module registry** (`ystack.config.json`) | Git | The full module map — which code, docs, and beads belong together |
+| **CLAUDE.md / AGENTS.md** | Git | AI context that every agent on the team reads |
+
+### What's NOT shared
+
+Temporary working files stay local to each agent:
+
+| Artifact | Why it's not shared |
+|----------|-------------------|
+| `.context/<bead-id>/PLAN.md` | Execution plan for one agent's current task — consumed by `/go`, then cleaned up |
+| `.context/<bead-id>/DECISIONS.md` | Scratch pad — decisions flow into bead notes and doc pages once work completes |
+
+### Parallel work
+
+Multiple developers can work on different features at the same time because:
+
+- **Beads** uses hash-based IDs (`bd-a1b2`) that never collide, even across branches
+- **`.context/`** is scoped by bead ID — each feature gets its own folder, no overwrites
+- **Dolt** (Beads' storage) supports cell-level 3-way merge — virtually no merge conflicts on task state
+- **Docs** are page-per-module — two developers touching different modules won't conflict
+
+### How a new team member onboards
+
+1. Clone the repo. Docs are already there — read them to understand the system.
+2. Run `bd ready` to see what's available to work on.
+3. Pick a task, run `/build` — the agent reads the same docs and creates a plan grounded in real architecture.
+4. No "ask Sarah about the payments module" — the docs page IS the answer.
+
+### How knowledge flows
+
+```
+Developer A builds a feature:
+  /build → /go → /review → /docs → /pr
+                              ↓
+                    Docs updated with new feature
+                              ↓
+Developer B starts their feature:
+  /build reads the updated docs
+    → agent has accurate context from A's work
+    → no stale assumptions, no hallucinated architecture
+```
+
+The docs are always current because updating them is a step in the workflow, not a separate chore. Every completed feature automatically becomes context for the next developer's agent.
+
 ## Module Registry
 
 The bridge between code, docs, and Beads. Each module maps to a doc page, code packages, and a Beads epic:
