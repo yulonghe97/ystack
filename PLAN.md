@@ -11,7 +11,7 @@ AI coding agents need three things they don't have:
 ## Commands
 
 ```
-/skeleton   →  split a big plan into module docs skeleton
+/scaffold   →  split a big plan into module docs scaffold
 /import     →  analyze existing repo, generate module registry + doc stubs
 /build      →  plan a feature (reads docs + code, surfaces assumptions)
 /go         →  execute the plan (fresh subagents, atomic commits)
@@ -25,8 +25,8 @@ AI coding agents need three things they don't have:
 **New project:**
 ```
 Big plan (markdown)
-  → /skeleton
-    → module registry, doc skeleton (overviews, interactions, stubs)
+  → /scaffold
+    → module registry, doc scaffold (overviews, interactions, stubs)
     → epic beads per module with child features
   → pick a module
   → /build → /go → /review → /docs → /pr
@@ -51,7 +51,7 @@ Existing repo + docs
 ```
 ┌──────────────────────────────────────────────────────┐
 │  Developer                                            │
-│  /skeleton  /import  /build  /go  /review  /docs  /pr │
+│  /scaffold  /import  /build  /go  /review  /docs  /pr │
 ├──────────────────────────────────────────────────────┤
 │  ystack (workflow layer)                              │
 │  • Module registry (modules ↔ docs ↔ beads)          │
@@ -151,9 +151,9 @@ Each module entry connects three things:
 
 ## Commands — Detailed Specs
 
-### `/skeleton` — Start a New Project
+### `/scaffold` — Start a New Project
 
-Takes a big plan (markdown input or file) and produces a documentation skeleton + module registry + epic beads.
+Takes a big plan (markdown input or file) and produces a documentation scaffold + module registry + epic beads.
 
 **When to use:** Starting a new project, or when you have an overall architecture in your head and want to turn it into a structured starting point.
 
@@ -187,7 +187,7 @@ Takes a big plan (markdown input or file) and produces a documentation skeleton 
 
 1. **Parse the plan** — extract modules, features per module, and inter-module connections.
 
-2. **Generate doc skeleton** — for each module, create:
+2. **Generate doc scaffold** — for each module, create:
    - `docs/src/content/<module>/index.mdx` — module overview with:
      - Purpose (1-2 sentences from the plan)
      - Module interaction diagram (Mermaid, auto-generated from connections)
@@ -216,15 +216,15 @@ Takes a big plan (markdown input or file) and produces a documentation skeleton 
    bd dep add bd-payments-wallet blocks:bd-dashboard-usage
    ```
 
-7. **Present skeleton to user** — show the doc structure, module diagram, and bead graph. Ask for corrections.
+7. **Present scaffold to user** — show the doc structure, module diagram, and bead graph. Ask for corrections.
 
 **Output:** A project with:
-- Doc skeleton (overviews with diagrams, feature stubs)
+- Doc scaffold (overviews with diagrams, feature stubs)
 - Module registry linking code ↔ docs ↔ beads
 - Epic beads with feature children
 - A clear "ready front" — features with no blockers that you can `/build` first
 
-**Key design:** The skeleton is intentionally shallow — module overviews and interaction diagrams only. No detailed specs. Those get written as features are implemented via `/docs`. This keeps docs honest: they describe what IS, not what's planned. The stubs show structure, the beads track what's left.
+**Key design:** The scaffold is intentionally shallow — module overviews and interaction diagrams only. No detailed specs. Those get written as features are implemented via `/docs`. This keeps docs honest: they describe what IS, not what's planned. The stubs show structure, the beads track what's left.
 
 ---
 
@@ -281,7 +281,7 @@ Analyzes an existing repo and generates the module registry, doc stubs, and Bead
    3. /build for any new features
    ```
 
-7. **Create doc stubs** for undocumented modules (if docs site exists) or offer to scaffold with `/skeleton`.
+7. **Create doc stubs** for undocumented modules (if docs site exists) or offer to scaffold with `/scaffold`.
 
 **Key design:** This is a long-running process. For a large repo it could take several minutes with parallel agents. Progress should be visible. The output is conservative — it creates beads and a registry but doesn't modify existing docs without user confirmation.
 
@@ -437,9 +437,9 @@ Delegates to existing `docs-update` skill.
 ### Our Own
 10. **Docs are final state only** — never "planned" or "in progress"
 11. **Module registry** — the bridge between code, docs, and beads
-12. **Skeleton-first** — start with structure, fill in as you build
+12. **Scaffold-first** — start with structure, fill in as you build
 13. **Import existing** — on-ramp for repos that already have code
-14. **7 commands** — skeleton, import, build, go, review, docs, pr
+14. **7 commands** — scaffold, import, build, go, review, docs, pr
 
 ---
 
@@ -498,7 +498,7 @@ Nothing is lost. Decisions get written into bead notes during execution. Outcome
 | **4** | `/review` — code review + verification | Quality gate |
 | **5** | `/docs` — doc sync for completed work | Docs stay current |
 | **6** | `/pr` — shipping chain | Wraps pr-draft |
-| **7** | `/skeleton` — new project scaffolding | New project on-ramp |
+| **7** | `/scaffold` — new project scaffolding | New project on-ramp |
 | **8** | `/import` — existing project adoption | Existing project on-ramp (long-running, complex) |
 | **9** | Hooks + installer + docs | Polish and distribution |
 
@@ -511,5 +511,5 @@ Nothing is lost. Decisions get written into bead notes during execution. Outcome
 3. **Parallel execution** — should `/go` parallelize independent tasks from day 1?
 4. **Linear sync** — use Beads `--external-ref linear:LIN-123` by default?
 5. **Import depth** — how deep should `/import` analyze? Function-level or module-level?
-6. **Skeleton input** — accept markdown file, clipboard, or interactive Q&A?
+6. **Scaffold input** — accept markdown file, clipboard, or interactive Q&A?
 7. **Multi-repo** — should module registry support modules across repos?

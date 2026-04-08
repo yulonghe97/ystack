@@ -111,7 +111,7 @@ The registry is small, stable, and rarely changes. It's the index — the docs, 
 
 This is a hard rule. Docs describe what IS, never what's planned.
 
-When you run `/skeleton` to start a new project, it creates doc stubs — module overviews with interaction diagrams and section headers. These stubs show structure (what modules exist and how they connect) but not implementation detail. The detail gets filled in by `/docs` as features are completed and verified.
+When you run `/scaffold` to start a new project, it creates doc stubs — module overviews with interaction diagrams and section headers. These stubs show structure (what modules exist and how they connect) but not implementation detail. The detail gets filled in by `/docs` as features are completed and verified.
 
 This means:
 - A new team member reading the docs sees exactly what's built and working

@@ -412,7 +412,7 @@ async function cmdInit() {
 	console.log("Next steps:");
 	console.log(`  ${cyan("/import")}  — scan codebase and populate module registry`);
 	console.log(`  ${cyan("/build")}   — plan a feature`);
-	console.log(`  ${cyan("/skeleton")} — scaffold docs from a plan\n`);
+	console.log(`  ${cyan("/scaffold")} — scaffold docs from a plan\n`);
 
 	rl.close();
 }
@@ -490,7 +490,7 @@ async function cmdCreate() {
 
 	const fromFlag = flags.find((f) => f.startsWith("--from"));
 	if (fromFlag) {
-		console.log(yellow("\nSkeleton integration from plan files is coming soon."));
+		console.log(yellow("\nScaffold integration from plan files is coming soon."));
 		console.log(yellow("Creating base project without plan integration.\n"));
 	}
 
@@ -905,7 +905,7 @@ ${bold("Commands:")}
   ${green("remove")}            Remove ystack skills and hooks (keeps data)
   ${green("create <name>")}     Scaffold a new project with opinionated defaults
   ${dim("  --docs nextra|fumadocs")}  Choose docs framework (default: nextra)
-  ${dim("  --from plan.md")}          Skeleton integration (coming soon)
+  ${dim("  --from plan.md")}          Scaffold integration (coming soon)
 
 ${bold("Docs:")}
   https://github.com/yulonghe97/ystack

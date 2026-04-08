@@ -246,7 +246,7 @@ Analyze the delta between code and docs:
 ---
 
 ### Recommended Next Steps
-1. Run `/skeleton` or `/docs` to create docs for managed-ads (5 undocumented features)
+1. Run `/scaffold` or `/docs` to create docs for managed-ads (5 undocumented features)
 2. Update shared/storage docs (stale — S3 → R2 migration)
 3. Add cross-reference links in aima/index.mdx
 4. `/build` for any new features — the registry is ready
@@ -277,7 +277,7 @@ Only flag clear mismatches. Don't flag vague prose that's technically correct.
   N pages found, M gaps detected
 
 ### Next Steps
-  - Fix N doc gaps with /docs or /skeleton
+  - Fix N doc gaps with /docs or /scaffold
   - Run /build to start new feature work
   - The module registry connects code ↔ docs ↔ beads
 ```
@@ -302,5 +302,5 @@ This is useful for large repos where a full scan is too slow, or when onboarding
 - **Does not modify code.** Read-only scan.
 - **Does not modify existing docs.** Reports gaps, doesn't fix them.
 - **Does not install tooling.** No Turborepo, Ultracite, Nextra — that's `npx ystack init` or `create`.
-- **Does not create doc pages.** Reports what's missing — `/docs` or `/skeleton` creates them.
+- **Does not create doc pages.** Reports what's missing — `/docs` or `/scaffold` creates them.
 - **Does not guess features.** Only reports what it can detect from code structure, exports, and file names.

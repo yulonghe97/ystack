@@ -1,20 +1,33 @@
 ---
-name: skeleton
+name: scaffold
 description: >
-  Scaffold a documentation skeleton from a project plan. Takes a markdown plan describing
-  modules and their relationships, produces doc stubs, module registry, Mermaid architecture
-  diagrams, and Beads epics. Use this skill when the user says 'skeleton', '/skeleton',
-  'scaffold docs', 'scaffold project', 'set up the docs', 'create doc skeleton',
-  'turn this plan into docs', 'bootstrap project', or provides a high-level plan they
-  want to turn into structured documentation.
+  Scaffold documentation structure from a plan. Two modes: (1) full-project — takes a
+  markdown plan describing all modules and their relationships, produces doc stubs, module
+  registry, Mermaid architecture diagrams, and Beads epics. (2) single-module — adds one
+  new module to an existing project. Use this skill when the user says 'scaffold',
+  '/scaffold', 'scaffold docs', 'scaffold project', 'set up the docs', 'add a module',
+  'new module', 'scaffold module', 'turn this plan into docs', 'bootstrap project',
+  or provides a high-level plan they want to turn into structured documentation.
 user-invocable: true
 ---
 
-# /skeleton — Scaffold a Project from a Plan
+# /scaffold — Scaffold Documentation from a Plan
 
-You take a rough project plan and produce a documentation skeleton — module overview pages, architecture diagrams, navigation, module registry, and Beads epics. This is the starting point for a new project.
+Two modes:
+- **Full project** (`/scaffold` with a project plan) — scaffold all modules for a new project
+- **Single module** (`/scaffold <module-name>` in an existing project) — add one new module
 
 **You produce structure, not detail.** Module overviews get purpose statements and feature stubs. The detail fills in later via `/docs` as features are implemented.
+
+---
+
+## Mode Detection
+
+1. If `ystack.config.json` exists AND the user provides a module name or a module-level plan (not a full project plan):
+   → **Single-module mode** (jump to [Single-Module Flow](#single-module-flow))
+
+2. Otherwise:
+   → **Full-project mode** (continue below)
 
 ## Phase 0: Get the Plan
 
@@ -102,7 +115,7 @@ Connections:
   dashboard → auth, payments, api
   api → auth, payments, db
 
-Does this look right? I'll generate the doc skeleton from this.
+Does this look right? I'll generate the doc structure from this.
 ```
 
 **Wait for confirmation.**
@@ -158,7 +171,7 @@ graph TB
 
 ## Phase 3: Generate Doc Pages
 
-Create the documentation skeleton. Each module gets an overview page with stubs.
+Create the documentation structure. Each module gets an overview page with stubs.
 
 ### Docs directory structure
 
@@ -372,14 +385,14 @@ If Beads (`bd`) is available:
 
 If Beads is not available, skip this phase and note:
 > Beads not detected. Module registry created without epic tracking.
-> Run `bd init` and re-run `/skeleton` to add Beads integration.
+> Run `bd init` and re-run `/scaffold` to add Beads integration.
 
-## Phase 6: Present the Skeleton
+## Phase 6: Present the Result
 
 Show the user what was generated:
 
 ```
-## Skeleton Complete
+## Scaffold Complete
 
 ### Architecture
 [the Mermaid diagram]
@@ -403,6 +416,126 @@ Show the user what was generated:
   1. Pick a module to start with — run `bd ready` to see what's unblocked
   2. `/build <feature>` to plan the first feature
   3. Doc pages will fill in as features are built via `/docs`
+```
+
+---
+
+## Single-Module Flow
+
+Use this flow when adding a new module to an existing project that already has `ystack.config.json` and a docs site.
+
+**Trigger:** `/scaffold <module-name>` or `/scaffold` with a module-level plan (not a full project plan) in a project with an existing `ystack.config.json`.
+
+### Step 1: Get the Module Plan
+
+1. If the user provided a module name with no description, ask:
+   > Describe the **<module-name>** module — what it does, its features, and what existing modules it connects to. Example:
+   >
+   > ```markdown
+   > ## Notifications
+   > - Email notifications (transactional, marketing)
+   > - Push notifications (mobile, web)
+   > - Notification preferences per user
+   > - Connects to: Auth, Payments
+   > ```
+
+2. If the user provided a description (inline or file), use that.
+
+### Step 2: Parse and Confirm
+
+Extract from the module plan:
+- **Name** and **slug** (e.g., "Notifications" → `notifications`)
+- **Type** — `app` or `package`
+- **Features** — bullet points
+- **Connections** — which existing modules it connects to (verify these exist in `ystack.config.json`)
+
+Read the existing `ystack.config.json` to understand what modules already exist.
+
+Present:
+```
+Adding module to existing project:
+
+  notifications (package) — 3 features
+    Connects to: auth, payments
+
+Existing modules: auth, payments, dashboard, api, db
+
+Proceed?
+```
+
+**Wait for confirmation.**
+
+### Step 3: Create Doc Page
+
+1. Read the existing docs structure to find the docs root and framework.
+
+2. Create the module overview page using the same template as full-project mode:
+   - `<docs-root>/<module-slug>/index.mdx` — overview with Purpose, Scope, Dependencies, Sub-modules
+   - `<docs-root>/<module-slug>/_meta.ts` (Nextra) or `meta.json` (Fumadocs)
+
+3. Update top-level navigation to include the new module:
+   - Nextra: add entry to `<docs-root>/_meta.ts`
+   - Fumadocs: add entry to `<docs-root>/meta.json`
+
+4. Update the project home page (`<docs-root>/index.mdx`):
+   - Add the new module to the architecture Mermaid diagram (add node + connection edges)
+   - Add row to the modules table
+
+### Step 4: Update Module Registry
+
+Read and update `ystack.config.json`:
+
+```json
+{
+  "modules": {
+    // ... existing modules ...
+    "<module-slug>": {
+      "doc": "<module-slug>",
+      "scope": ["<apps-or-packages>/<module-slug>/**"],
+      "status": "planned"
+    }
+  }
+}
+```
+
+### Step 5: Create Beads Epic
+
+If Beads (`bd`) is available:
+
+1. Create the module epic:
+   ```bash
+   bd create "<Module Name>" -t epic --metadata '{"doc": "<module-slug>", "ystack": true}'
+   ```
+
+2. Create feature beads as children:
+   ```bash
+   bd create "<Feature description>" -t feature --parent <epic-id>
+   ```
+
+3. Add dependencies to existing module beads where connections exist.
+
+4. Update `ystack.config.json` with the epic ID.
+
+### Step 6: Present Summary
+
+```
+## Module Added: <Module Name>
+
+### Docs
+  <docs-root>/<module-slug>/index.mdx — overview with 3 feature stubs
+
+### Registry
+  ystack.config.json — module added (status: planned)
+
+### Beads
+  1 epic, 3 feature beads created
+
+### Architecture Diagram
+  Updated — <module-slug> connected to auth, payments
+
+### Next Steps
+  1. `/build <feature>` to plan the first feature in this module
+  2. Doc detail will fill in as features are built via `/docs`
 ```
 
 ---
