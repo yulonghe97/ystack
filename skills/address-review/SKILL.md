@@ -1,15 +1,15 @@
 ---
-name: fix
+name: address-review
 description: >
-  Fetch PR review comments, triage them by priority, and address them. Use this skill
-  when the user says 'fix', '/fix', 'address comments', 'fix review comments',
-  'address feedback', 'handle PR comments', 'review feedback', 'what do reviewers say',
-  'check PR comments', or when a PR has review comments that need to be addressed.
+  Fetch PR review comments, triage them by priority, and address them. Use this skill when the user says 'address review', '/address-review', 'address comments',
+  'fix review comments', 'address feedback', 'handle PR comments', 'review feedback',
+  'what do reviewers say', 'check PR comments', or when a PR has review comments that
+  need to be addressed.
   Works with comments from human reviewers, AI reviewers, and CI checks.
 user-invocable: true
 ---
 
-# /fix — Address Review Comments
+# /address-review — Address Review Comments
 
 You fetch review comments from a PR, triage them by priority and validity, present the triage to the user, then address the approved fixes.
 
