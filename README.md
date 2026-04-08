@@ -177,13 +177,14 @@ When a feature bead closes, ystack knows which doc page to update. When `/build`
 ## Prerequisites
 
 - [Beads](https://github.com/gastownhall/beads) (`bd`) installed and initialized
-- [Claude Code](https://claude.ai/code) with skills support
+- An AI coding agent — [Claude Code](https://claude.ai/code) (full support), Codex, Cursor, Copilot, Gemini CLI, or Windsurf (see [RUNTIMES.md](./RUNTIMES.md) for capability tiers)
 - A project with documentation (Nextra/MDX preferred, any markdown works)
 
 ## Docs
 
 - [PHILOSOPHY.md](./PHILOSOPHY.md) — Design principles and rationale
 - [LINTING.md](./LINTING.md) — Agent linting — rules that grow with the harness
+- [RUNTIMES.md](./RUNTIMES.md) — Multi-runtime support — Claude Code, Codex, Cursor, and more
 - [PLAN.md](./PLAN.md) — Full roadmap and command specs
 
 ## Status
