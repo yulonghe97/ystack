@@ -1,0 +1,32 @@
+{
+  "name": "ystack",
+  "version": "0.1.0",
+  "description": "An agent harness for doc-driven development",
+  "type": "module",
+  "bin": {
+    "ystack": "./bin/cli.js"
+  },
+  "files": [
+    "skills/",
+    "hooks/",
+    "bin/",
+    "README.md",
+    "PHILOSOPHY.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "ai",
+    "agent",
+    "harness",
+    "documentation",
+    "claude-code",
+    "beads",
+    "workflow"
+  ],
+  "author": "Yulong He",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yulonghe97/ystack.git"
+  }
+}
