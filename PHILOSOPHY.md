@@ -1,5 +1,17 @@
 # Design Philosophy
 
+## The Five Constraints
+
+The harness enforces five things on every agent interaction:
+
+1. **Read the spec first.** Before writing code, the agent reads the relevant doc page. No guessing.
+2. **Plan before executing.** The agent shows you what it will do. You confirm or correct.
+3. **Verify against criteria.** After execution, goal-backward verification checks the codebase — "does this column exist? Is this endpoint wired?" — not "did the task complete?"
+4. **Never simplify silently.** If the plan can't deliver what was decided, it splits into phases instead of cutting corners.
+5. **Update docs when done.** Documentation reflects the new reality before the PR is created.
+
+The harness also includes [agent linting](./LINTING.md) — rules that check agent behavior, not code style. Did the agent read the spec? Does the plan cover all decisions? Are docs updated? These rules grow with the harness: each new skill can ship its own lint rules.
+
 ## Documentation as the Operating System
 
 Most teams treat documentation as a chore — something you write after the code is done, if you write it at all. ystack treats documentation as the operating system for your entire development process.
