@@ -82,19 +82,28 @@ The bridge between code, docs, and Beads. Lives in `ystack.config.json`:
   "modules": {
     "payments": {
       "doc": "shared/payments",
-      "packages": ["packages/payments", "packages/db"],
+      "scope": [
+        "packages/payments/**",
+        "packages/db/src/schema/transactions.*",
+        "apps/api/src/routes/payments.*"
+      ],
       "epic": "bd-a1b2",
       "status": "active"
     },
     "aima": {
       "doc": "aima",
-      "packages": ["packages/aima"],
+      "scope": [
+        "packages/aima/**",
+        "apps/api/src/messaging-gateway/**"
+      ],
       "epic": "bd-c3d4",
       "status": "active"
     },
     "admin": {
       "doc": "admin",
-      "packages": ["apps/admin"],
+      "scope": [
+        "apps/admin/**"
+      ],
       "epic": "bd-e5f6",
       "status": "active"
     }
@@ -122,9 +131,9 @@ The bridge between code, docs, and Beads. Lives in `ystack.config.json`:
 ```
 
 Each module entry connects three things:
-- **doc** — path to the docs page (relative to docs root)
-- **packages** — which code directories belong to this module
-- **epic** — the Beads epic tracking this module's progress
+- **doc** — path to the docs section (relative to docs root). Sub-modules are doc sub-pages, not separate registry entries.
+- **scope** — glob patterns for code that belongs to this module. A module can span files across multiple packages.
+- **epic** — the Beads epic tracking this module's progress. Features are child beads, not registry entries.
 
 ### Two Sources of Truth
 

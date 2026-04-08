@@ -53,7 +53,7 @@ These ship with ystack out of the box.
 |------|----------|------|---------------|
 | `cross-references` | Warn | During `/docs` | Does the updated doc page link to related modules? Flags isolated pages. |
 | `final-state-only` | Block | During `/docs` | Does the doc contain "planned", "coming soon", "TODO", "WIP"? Docs describe what IS. |
-| `module-registered` | Warn | During `/build` | Is the target module in `ystack.config.json`? Catches work on unregistered modules. |
+| `module-registered` | Warn | During `/build` | Is the target module in `ystack.config.json`? Catches work outside any module's scope. |
 
 ### Context Rules
 

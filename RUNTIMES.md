@@ -142,7 +142,7 @@ Regardless of runtime, every agent gets:
 
 2. **Docs** — every agent can read markdown files. The documentation-as-spec pattern is runtime-agnostic.
 
-3. **Module registry** — `ystack.config.json` is JSON. Any agent can parse it to find the right doc page and code packages.
+3. **Module registry** — `ystack.config.json` is JSON. Any agent can parse it to find the right doc page and code scope.
 
 4. **`.context/<bead-id>/`** — PLAN.md and DECISIONS.md are markdown files. Any agent can read and write them.
 

@@ -75,17 +75,23 @@ The module registry bridges three worlds:
 {
   "payments": {
     "doc": "shared/payments",
-    "packages": ["packages/payments", "packages/db"],
+    "scope": [
+      "packages/payments/**",
+      "packages/db/src/schema/transactions.*",
+      "apps/api/src/routes/payments.*"
+    ],
     "epic": "bd-a1b2"
   }
 }
 ```
 
 - **doc** → where to read the spec (and where to write updates when features complete)
-- **packages** → where the code lives (what to scan when planning, what to verify when done)
+- **scope** → where the code lives, as glob patterns. A module doesn't have to be a package — it can span files across multiple packages, or live within a subdirectory of one. This is what to scan when planning and what to verify when done.
 - **epic** → where progress lives (which features are built, which are pending)
 
-When a Beads epic's child closes, ystack knows which doc page might need updating. When `/build` starts planning, it knows which doc page to read for context. When `/import` scans an existing repo, it builds this map automatically.
+The registry tracks **modules only**. Sub-modules are tracked by the docs site (sub-pages within a module). Features are tracked by Beads (child beads under the module's epic). Each layer has its own hierarchy — the registry connects the top level.
+
+When a Beads epic's child closes, ystack knows which doc page might need updating. When `/build` starts planning, it knows which files across the repo are relevant. When `/import` scans an existing repo, it builds this map automatically.
 
 The registry is small, stable, and rarely changes. It's the index — the docs, code, and beads are the content.
 

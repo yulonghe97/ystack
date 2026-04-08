@@ -208,11 +208,7 @@ npx ystack init --skills-only
      },
      "monorepo": {
        "enabled": true,
-       "tool": "turborepo",
-       "scopes": {
-         "apps/api": "api",
-         "packages/auth": "auth"
-       }
+       "tool": "turborepo"
      },
      "modules": {}
    }

@@ -293,12 +293,12 @@ Create `ystack.config.json`:
   "modules": {
     "<module-a-slug>": {
       "doc": "<module-a-slug>",
-      "packages": ["<apps-or-packages>/<module-a-slug>"],
+      "scope": ["<apps-or-packages>/<module-a-slug>/**"],
       "status": "planned"
     },
     "<module-b-slug>": {
       "doc": "<module-b-slug>",
-      "packages": ["<apps-or-packages>/<module-b-slug>"],
+      "scope": ["<apps-or-packages>/<module-b-slug>/**"],
       "status": "planned"
     }
   }
@@ -307,7 +307,8 @@ Create `ystack.config.json`:
 
 Notes:
 - `status` starts as `"planned"` — changes to `"active"` when first feature is built
-- `packages` maps to the expected code directory — even if it doesn't exist yet
+- `scope` uses glob patterns — a module can span multiple packages or be a subdirectory within one
+- Sub-modules are tracked by docs (sub-pages). Features are tracked by Beads (child beads). The registry only tracks modules.
 - `epic` field is added in Phase 5 after Beads creates the epics (omitted if Beads not available)
 - The `doc` path is relative to `docs.root`
 

@@ -19,7 +19,7 @@ You are the planning phase of the ystack agent harness. Your job is to understan
 
 Identify which module(s) this feature belongs to.
 
-1. Read `ystack.config.json` if it exists. Look for a matching module in the `modules` map:
+1. Read `ystack.config.json` if it exists. Match the feature to a module by checking `scope` globs:
    ```bash
    cat ystack.config.json
    ```

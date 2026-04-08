@@ -61,7 +61,7 @@ The harness also includes [agent linting](./LINTING.md) — rules that check age
 | **Beads** | The development state machine. What's built, what's in progress, what's blocked. Persistent memory that survives context resets. | Beads (`bd`) |
 | **Code** | The implementation. Doesn't need to explain itself — the architecture lives in docs, the progress lives in Beads. | Your repo |
 
-The **module registry** (`ystack.config.json`) bridges them: each module maps to a doc page, code packages, and a Beads epic.
+The **module registry** (`ystack.config.json`) bridges them: each module maps to a doc page, code scope (glob patterns across the repo), and a Beads epic.
 
 **Three principles** drive the design (see [PHILOSOPHY.md](./PHILOSOPHY.md) for the full rationale):
 
@@ -159,21 +159,27 @@ The docs are always current because updating them is a step in the workflow, not
 
 ## Module Registry
 
-The bridge between code, docs, and Beads. Each module maps to a doc page, code packages, and a Beads epic:
+The bridge between code, docs, and Beads. Each module maps to a doc section, code scope, and a Beads epic:
 
 ```json
 {
   "modules": {
     "payments": {
       "doc": "shared/payments",
-      "packages": ["packages/payments", "packages/db"],
+      "scope": [
+        "packages/payments/**",
+        "packages/db/src/schema/transactions.*",
+        "apps/api/src/routes/payments.*"
+      ],
       "epic": "bd-a1b2"
     }
   }
 }
 ```
 
-When a feature bead closes, ystack knows which doc page to update. When `/build` starts planning, it knows which doc page to read. The registry is the index — docs, code, and Beads are the content.
+A module doesn't have to be a package. `scope` is an array of glob patterns — a module can span files across multiple packages, or be a subdirectory within one. Sub-modules and features are tracked by docs (pages) and Beads (child beads), not the registry.
+
+When a feature bead closes, ystack knows which doc page to update. When `/build` starts planning, it knows which files across the repo are relevant. The registry tracks modules only — docs handle sub-modules, Beads handle features.
 
 ## Getting Started
 

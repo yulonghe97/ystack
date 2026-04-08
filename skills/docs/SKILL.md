@@ -27,7 +27,7 @@ You update documentation to reflect completed, verified work. Docs describe what
 
 Identify which documentation pages are affected.
 
-1. **Read the module registry** (`ystack.config.json`) to find the module-to-doc mapping. If no registry exists, fall back to scanning `docs/src/content/_meta.ts`.
+1. **Read the module registry** (`ystack.config.json`) to find the module-to-doc mapping. Match changed file paths against module `scope` globs. If no registry exists, fall back to scanning `docs/src/content/_meta.ts`.
 
 2. **Map changed code paths to doc pages:**
 
