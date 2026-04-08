@@ -2,56 +2,68 @@
 
 Doc-driven workflow orchestration for AI coding agents, built on top of [Beads](https://github.com/gastownhall/beads).
 
-## Why?
+## The Idea
 
-**Beads** gives AI agents persistent memory — task graphs, structured notes, session protocols. But it doesn't know about your documentation, can't orchestrate multi-step execution with fresh context per agent, and doesn't verify code matches the spec.
-
-**GSD** solves orchestration — goal-backward verification, plans-as-prompts, wave-based execution. But it's 65 commands with its own requirements system, disconnected from your docs.
-
-**ystack** bridges the gap: 4 commands, doc-driven, built on Beads.
-
-## The Flow
+Your documentation should describe what your system IS — not what's planned, not what's in progress. Beads tracks the journey. Docs show the destination. ystack connects them.
 
 ```
-/build add refund reason to payments
-  → reads docs + code, creates plan (user confirms)
-/go
-  → splits tasks, executes with fresh subagents, atomic commits
-/review
-  → code review, returns findings (user confirms)
-/docs
-  → updates affected documentation pages
-/pr
-  → creates PR draft
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  Docs (Nextra)  │     │  Beads (bd)     │     │  Code           │
+│  What it IS     │◄────│  What's done /  │────►│  The actual     │
+│  Final specs    │     │  what's left    │     │  implementation │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+        ▲                       ▲                       ▲
+        └───────────────────────┴───────────────────────┘
+                        Module Registry
+                    (ystack.config.json)
 ```
 
 ## Commands
 
+### Starting a project
+
 | Command | What it does |
 |---------|-------------|
-| `/build <feature>` | Reads docs + code, surfaces assumptions, creates a plan. Asks you to confirm. |
-| `/go` | Executes the plan — fresh subagent per task, atomic commits, structured notes. |
-| `/review` | Code review against project rules. Fix issues or confirm. |
-| `/docs` | Updates documentation affected by the changes. |
-| `/pr` | Creates a PR draft with verify → docs check → pr-draft chain. |
+| `/skeleton` | Takes a big plan, splits it into module doc stubs + interaction diagrams + epic beads |
+| `/import` | Scans an existing repo, generates module registry, flags doc gaps |
 
-For small tasks, `/build` detects simplicity and offers to execute immediately — no need for a separate `/go`.
+### Building features
 
-## How It Works
+| Command | What it does |
+|---------|-------------|
+| `/build <feature>` | Reads docs + code, surfaces assumptions, creates a plan. You confirm. |
+| `/go` | Executes the plan — fresh subagent per task, atomic commits. |
+| `/review` | Code review + goal-backward verification against success criteria. |
+| `/docs` | Updates documentation for completed work (only completed, never planned). |
+| `/pr` | Verify → docs check → create PR. |
 
-| Layer | Tool | Role |
-|-------|------|------|
-| Persistent memory | **Beads** (`bd`) | Task graph, dependencies, session state, cross-session continuity |
-| Workflow orchestration | **ystack** | Doc-driven intake, execution, review, doc sync, shipping |
-| Your project | Existing skills | `pr-draft`, `docs-update`, `commit` — ystack chains into these |
+### The flow
 
-### Core Ideas
+```
+New project:
+  big plan → /skeleton → pick a module → /build → /go → /review → /docs → /pr
 
-1. **Docs are the spec** — AI reads your docs to understand what to build, then keeps them in sync
-2. **Beads is the memory** — task state, dependencies, structured notes all live in `bd`
-3. **Fresh context per agent** — subagents get clean context windows, preventing quality degradation
-4. **Goal-backward verification** — check "what must be TRUE" not "what tasks ran"
-5. **Assumptions over Q&A** — surface "here's what I'd do" and let you correct, instead of 20 questions
+Existing project:
+  repo → /import → /build → /go → /review → /docs → /pr
+```
+
+## Module Registry
+
+The bridge between code, docs, and Beads. Each module maps to a doc page, code packages, and a Beads epic:
+
+```json
+{
+  "modules": {
+    "payments": {
+      "doc": "shared/payments",
+      "packages": ["packages/payments", "packages/db"],
+      "epic": "bd-a1b2"
+    }
+  }
+}
+```
+
+When a feature bead closes → ystack knows which doc page to update.
 
 ## Prerequisites
 

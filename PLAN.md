@@ -2,382 +2,103 @@
 
 ## Problem
 
-AI coding agents need two things they don't have:
+AI coding agents need three things they don't have:
 
-1. **Memory** — persistent state across sessions (solved by Beads)
-2. **Workflow** — a guided path from "I want to build X" to "PR created" (solved by ystack)
+1. **Memory** — persistent state across sessions → Beads
+2. **Workflow** — a guided path from idea to PR → ystack commands
+3. **Spec-code-docs coherence** — docs reflect what's built, not what's planned → module registry + doc sync
 
-The workflow should be dead simple to learn. Not 65 commands. Not 10 commands. **4 commands + 2 confirmation checkpoints.**
-
-## The Flow
+## Commands
 
 ```
-/build add refund reason to payments
-  → checks status, reads docs + code, creates plan
-  → presents plan to user
-
-User confirms or corrects the plan
-
-/go
-  → splits into tasks, executes with fresh subagents
-  → atomic commit per task
-  → shows results
-
-/review
-  → code review against project rules
-  → returns findings
-
-User confirms (or asks for fixes)
-
-/docs
-  → detects which doc pages are affected
-  → updates them
-
-/pr
-  → verify → docs check → pr-draft → create PR
+/skeleton   →  split a big plan into module docs skeleton
+/import     →  analyze existing repo, generate module registry + doc stubs
+/build      →  plan a feature (reads docs + code, surfaces assumptions)
+/go         →  execute the plan (fresh subagents, atomic commits)
+/review     →  code review + goal-backward verification
+/docs       →  update documentation for completed work
+/pr         →  verify → docs check → create PR
 ```
 
-For small tasks, `/build` detects simplicity and asks: "This is small — want me to just do it?" — collapsing `/go` into the same step.
+### The Two Flows
+
+**New project:**
+```
+Big plan (markdown)
+  → /skeleton
+    → module registry, doc skeleton (overviews, interactions, stubs)
+    → epic beads per module with child features
+  → pick a module
+  → /build → /go → /review → /docs → /pr
+  → repeat per module
+```
+
+**Existing project:**
+```
+Existing repo + docs
+  → /import
+    → scans code, docs, git history
+    → generates module registry
+    → creates epic beads per module (marks implemented features as closed)
+    → flags doc gaps
+  → continue with /build → /go → /review → /docs → /pr
+```
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
-│  Developer                                       │
-│  /build   /go   /review   /docs   /pr            │
-├─────────────────────────────────────────────────┤
-│  ystack (workflow layer)                         │
-│  • Reads docs as spec                            │
-│  • Plans with goal-backward criteria             │
-│  • Executes with fresh subagents                 │
-│  • Reviews against project rules                 │
-│  • Detects doc drift, syncs docs                 │
-│  • Chains into pr-draft for shipping             │
-├─────────────────────────────────────────────────┤
-│  Beads (memory layer)                            │
-│  • Task graph with dependencies                  │
-│  • Structured notes (compaction survival)        │
-│  • Ready fronts (dependency-driven work)         │
-│  • Session protocol (prime → work → handoff)     │
-│  • Cross-session continuity (Dolt DB)            │
-├─────────────────────────────────────────────────┤
-│  Project                                         │
-│  • CLAUDE.md / AGENTS.md                         │
-│  • docs/ (Nextra, MDX — the spec)               │
-│  • Existing skills: pr-draft, docs-update, etc.  │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│  Developer                                            │
+│  /skeleton  /import  /build  /go  /review  /docs  /pr │
+├──────────────────────────────────────────────────────┤
+│  ystack (workflow layer)                              │
+│  • Module registry (modules ↔ docs ↔ beads)          │
+│  • Doc-driven planning                                │
+│  • Execution with fresh subagents                     │
+│  • Goal-backward verification                         │
+│  • Doc sync (completed work → docs)                   │
+├──────────────────────────────────────────────────────┤
+│  Beads (memory layer)                                 │
+│  • Epic beads per module                              │
+│  • Feature beads as children                          │
+│  • Structured notes, dependencies                     │
+│  • Cross-session continuity                           │
+├──────────────────────────────────────────────────────┤
+│  Project                                              │
+│  • docs/ (the spec — final state only)                │
+│  • CLAUDE.md / AGENTS.md                              │
+│  • Existing skills: pr-draft, docs-update, commit     │
+└──────────────────────────────────────────────────────┘
 ```
 
-### What Lives Where
+### The Module Registry
 
-| Concern | Owner | Why |
-|---------|-------|-----|
-| Task tracking, dependencies, status | **Beads** | Already built, Dolt-backed, merge-safe |
-| Structured notes, session state | **Beads** | Compaction survival, cross-session |
-| Ready front computation | **Beads** (`bd ready`) | Graph query on dependency DAG |
-| Execution plans | **ystack** (`.context/PLAN.md`) | Plans-as-prompts for subagent consumption |
-| Decisions from intake | **ystack** (`.context/DECISIONS.md`) | Doc-driven, not generic task metadata |
-| Doc-driven spec reading | **ystack** | Beads doesn't know about your docs |
-| Goal-backward verification | **ystack** | Requires codebase analysis |
-| PR creation, doc sync | **ystack** + existing skills | Chains pr-draft, docs-update |
-
----
-
-## Commands — Detailed Specs
-
-### `/build <feature>` — Plan
-
-The entry point. Takes a natural language feature description and produces a plan.
-
-**Process:**
-
-1. **Check status** — run `bd ready` to see if there's in-progress work. If resuming, show context and ask how to proceed.
-
-2. **Find relevant docs** — scan docs site structure (`docs/src/content/`), match by module/feature name. Read the matching pages to understand the current spec.
-
-3. **Find relevant code** — identify which packages/files are involved. Read schema files, API routes, UI components as needed.
-
-4. **Surface assumptions** — present "here's what I'd do and why" instead of asking 20 questions:
-   ```
-   I'd approach this by:
-   1. Adding a `refundReason` enum column to the transactions table
-   2. Accepting it in the POST /api/payments/refund endpoint
-   3. Displaying it as a badge in the admin transaction detail
-
-   Assumptions:
-   - Enum values: duplicate, fraud, requested, other
-   - Column on transactions table, not a separate table
-   - Admin shows it in detail view, not list view
-
-   Correct anything that's wrong, or confirm to proceed.
-   ```
-
-5. **Capture decisions** — write `.context/DECISIONS.md`:
-   ```markdown
-   # Decisions
-
-   ## Locked
-   - Refund reason uses enum: duplicate, fraud, requested, other
-   - Column on transactions table
-   - Badge in admin transaction detail panel
-
-   ## Claude's Discretion
-   - Exact column name (follow project conventions)
-   - Migration file naming
-
-   ## Deferred
-   - Filtering by refund reason (future work)
-   ```
-
-6. **Create plan** — write `.context/PLAN.md` with goal-backward success criteria:
-   ```markdown
-   # Plan: Add refund reason to payments
-
-   ## Success Criteria
-   - [ ] `refundReason` enum column exists on transactions table
-   - [ ] POST /api/payments/refund accepts `reason` field
-   - [ ] Admin transaction detail shows refund reason badge
-   - [ ] Types exported from @hellyeah/shared
-
-   ## Tasks
-
-   ### task-1: Schema and types (bd-a1b2)
-   **Files:** packages/db/src/schema.ts, packages/shared/src/types/payments.ts
-   **Do:** Add refundReason column (enum). Export type.
-   **Verify:** pnpm typecheck passes.
-
-   ### task-2: API endpoint (bd-c3d4)
-   **Files:** apps/api/src/routes/payments.ts
-   **Do:** Accept reason in refund endpoint. Validate with Zod.
-   **Verify:** Endpoint accepts valid reasons, rejects invalid.
-
-   ### task-3: Admin UI (bd-e5f6)
-   **Files:** apps/admin/src/app/transactions/[id]/page.tsx
-   **Do:** Add RefundReasonBadge. Wire to API response.
-   **Verify:** Badge renders for refunded transactions.
-   **Depends on:** task-1, task-2
-   ```
-
-7. **Create beads** — `bd create` for each task with dependencies.
-
-8. **Spawn plan-checker** — subagent validates:
-   - Does the plan deliver ALL locked decisions?
-   - Is anything silently simplified? (scope reduction check)
-   - Is any task too large for a fresh context?
-   - Max 2 revision iterations.
-
-9. **Present plan to user** — wait for confirmation or corrections.
-
-**Small task detection:** If the plan has 1 task and touches ≤3 files, ask: "This is small — want me to just do it?" If yes, execute immediately (skip `/go`).
-
----
-
-### `/go` — Execute
-
-Runs the plan. Each task gets a fresh subagent to prevent context rot.
-
-**Process:**
-
-1. **Read plan** — load `.context/PLAN.md`.
-
-2. **Compute order** — tasks without dependencies run first. Independent tasks can run in parallel (wave-based).
-
-3. **For each task:**
-   a. Claim bead: `bd update <id> --claim`
-   b. Spawn subagent with ONLY: task description + file targets + verification step
-   c. Subagent reads target files, makes changes, runs verification
-   d. Atomic commit on success
-   e. Update bead notes (structured format):
-      ```
-      COMPLETED: Added refundReason enum column to schema
-      KEY DECISIONS: Used pgEnum, values match DECISIONS.md
-      ```
-   f. Close bead: `bd close <id> --reason "Implemented and verified"`
-
-4. **Handle deviations:**
-   - Auto-fix: minor bugs, missing imports, type errors in adjacent code
-   - STOP and ask: architectural decisions, new tables, scope changes
-
-5. **Report results** — show what was done per task, any issues encountered.
-
----
-
-### `/review` — Code Review
-
-Reviews the changes against project standards.
-
-**Process:**
-
-1. **Load rules** — read `.claude/rules/`, CLAUDE.md, contributor guidance, design guide.
-
-2. **Read diff** — all changes since before `/go` started.
-
-3. **Check against rules:**
-   - Security (injection, XSS, auth)
-   - Accessibility (ARIA, semantic HTML, keyboard)
-   - Performance (unnecessary re-renders, N+1 queries)
-   - Code style (Ultracite/Biome compliance)
-   - Type safety (any usage, missing types)
-   - Error handling (unhandled promises, missing validation)
-
-4. **Goal-backward verification:**
-   - Read success criteria from PLAN.md
-   - For each criterion, verify against actual code
-   - File existence, pattern matching, typecheck, test runs
-   - Distrust summaries — check the code directly
-
-5. **Output findings** with file:line references:
-   ```
-   ## Review Results
-
-   ### Issues (2)
-   - [WARN] apps/admin/src/app/transactions/[id]/page.tsx:45
-     RefundReasonBadge missing aria-label for screen readers
-   - [WARN] apps/api/src/routes/payments.ts:98
-     Missing error message in Zod validation
-
-   ### Verification: 4/4 PASS
-   - [PASS] refundReason column exists — packages/db/src/schema.ts:47
-   - [PASS] API accepts reason — apps/api/src/routes/payments.ts:92
-   - [PASS] Admin badge renders — apps/admin/.../page.tsx:43
-   - [PASS] Types exported — packages/shared/src/types/payments.ts:23
-   ```
-
-6. **User decides:** fix issues, or accept and move on.
-
----
-
-### `/docs` — Update Documentation
-
-Detects which doc pages are affected and updates them.
-
-**Process:**
-
-1. **Detect changes** — `git diff --stat` to see which packages/files changed.
-
-2. **Map to docs** — match changed code paths to doc pages:
-   - `packages/db/src/schema.ts` → `docs/src/content/data-models.mdx`
-   - `packages/payments/` → `docs/src/content/shared/payments.mdx`
-   - `apps/api/src/routes/` → `docs/src/content/api/` pages
-
-3. **Read before writing** — load affected doc pages, understand current content.
-
-4. **Update only changed sections** — don't rewrite entire pages. Add/modify:
-   - New data model fields
-   - New API endpoints or parameters
-   - Updated flow diagrams (Mermaid)
-   - Changed scope or dependencies
-
-5. **Update structural files if needed** — CLAUDE.md, AGENTS.md, package CLAUDE.md.
-
-6. **Show changes** — present doc updates to user for review.
-
-Delegates to existing `docs-update` skill under the hood.
-
----
-
-### `/pr` — Create PR
-
-The final step. Chains verification, docs check, and PR creation.
-
-**Process:**
-
-1. **Final verification** — run success criteria check one more time.
-
-2. **Docs check** — any code changes without corresponding doc updates? Warn if so.
-
-3. **Lint and typecheck** — `pnpm fix` + `pnpm typecheck`.
-
-4. **Delegate to pr-draft** — uses existing `pr-draft` skill for:
-   - Branch sync (fetch, rebase)
-   - Diff analysis
-   - Monorepo-aware section grouping
-   - Conventional commit title
-   - PR creation (draft or ready)
-
-5. **Close out beads** — verify all beads in scope are closed.
-
-6. **Archive `.context/`** — clean up ephemeral files.
-
----
-
-## The `.context/` Directory
-
-Ephemeral working files. Gitignored. Only exists during active work.
-
-```
-.context/
-├── DECISIONS.md     # Locked choices from /build
-└── PLAN.md          # Execution plan (the subagent prompt)
-```
-
-Everything persistent (tasks, notes, deps, session state) lives in **Beads**.
-
----
-
-## Design Principles
-
-### From GSD
-1. **Plans are prompts** — PLAN.md is the literal prompt the executor subagent receives
-2. **Goal-backward verification** — success criteria checked against actual code, not task completion
-3. **Fresh context per agent** — each subagent gets a clean context window
-4. **Scope reduction prohibition** — never silently simplify; split tasks instead
-5. **Plan-checker gate** — validate plan before burning context on execution
-
-### From Beads
-6. **Beads is the state layer** — don't reinvent task tracking
-7. **Structured notes** — COMPLETED / IN PROGRESS / NEXT / KEY DECISIONS / BLOCKERS
-8. **Ready fronts** — `bd ready` drives work selection for large multi-task features
-9. **Discovery-driven** — side quests captured with `bd create --deps discovered-from:<id>`
-
-### Our Own
-10. **Docs are the spec** — read existing docs to understand what to build
-11. **Assumptions over Q&A** — present a plan, let user correct
-12. **4 commands** — simple enough to remember without a manual
-13. **Chain existing skills** — pr-draft, docs-update, commit are already battle-tested
-
----
-
-## Hooks
-
-### Context Monitor (PostToolUse)
-- At 60% context: suggest spawning subagents
-- At 80%: warn and suggest finishing current task
-
-### Session Start
-- Auto-detect Beads project (`.beads/` exists)
-- Run `bd ready` and show status
-- If `.context/PLAN.md` exists, remind user of in-progress work
-
-### Workflow Nudge (PreToolUse on Edit)
-- If editing code with no `.context/PLAN.md`: soft warning
-- "Consider `/build` or just `/build --quick` for tracked changes."
-
----
-
-## Build Order
-
-| Phase | What | Ship When |
-|-------|------|-----------|
-| **1** | `/build` — doc reading, assumptions, plan creation, plan-checker | Can use standalone to plan work |
-| **2** | `/go` — task execution with fresh subagents | Core loop works: build → go |
-| **3** | `/review` — code review + goal-backward verification | Quality gate before shipping |
-| **4** | `/docs` — doc drift detection + updates | Wraps existing docs-update skill |
-| **5** | `/pr` — PR creation chain | Wraps existing pr-draft skill |
-| **6** | Hooks + installer | Polish and distribution |
-
-Each phase is independently useful. `/build` alone is valuable even without `/go`.
-
----
-
-## Configuration
-
-`ystack.config.json` in project root:
+The bridge between code, docs, and Beads. Lives in `ystack.config.json`:
 
 ```json
 {
+  "modules": {
+    "payments": {
+      "doc": "shared/payments",
+      "packages": ["packages/payments", "packages/db"],
+      "epic": "bd-a1b2",
+      "status": "active"
+    },
+    "aima": {
+      "doc": "aima",
+      "packages": ["packages/aima"],
+      "epic": "bd-c3d4",
+      "status": "active"
+    },
+    "admin": {
+      "doc": "admin",
+      "packages": ["apps/admin"],
+      "epic": "bd-e5f6",
+      "status": "active"
+    }
+  },
   "docs": {
     "root": "docs/src/content",
     "framework": "nextra"
@@ -400,52 +121,355 @@ Each phase is independently useful. `/build` alone is valuable even without `/go
 }
 ```
 
+Each module entry connects three things:
+- **doc** — path to the docs page (relative to docs root)
+- **packages** — which code directories belong to this module
+- **epic** — the Beads epic tracking this module's progress
+
+### Two Sources of Truth
+
+| | Docs (Nextra) | Beads |
+|---|---|---|
+| **Shows** | What the system IS (final state) | What's been done, what's left |
+| **Audience** | Whole team, new devs, AI agents | Active developers, AI agents |
+| **Changes when** | Feature is completed and verified | Every task starts/finishes |
+| **Contains** | Architecture, contracts, data models, flows | Progress, decisions, context, next steps |
+| **Never contains** | Planning, in-progress, "coming soon" | Final specs (those go in docs) |
+
+**The sync rule:** docs reflect only completed work. When a bead closes → check parent epic → flag doc page for update. `/docs` reads closed-but-not-yet-documented children to know what's new.
+
 ---
 
-## File Structure
+## Commands — Detailed Specs
+
+### `/skeleton` — Start a New Project
+
+Takes a big plan (markdown input or file) and produces a documentation skeleton + module registry + epic beads.
+
+**When to use:** Starting a new project, or when you have an overall architecture in your head and want to turn it into a structured starting point.
+
+**Input:** A markdown document describing the project. Can be rough — module names, how they connect, key features. Example:
+
+```markdown
+# MyApp
+
+## Modules
+
+### Auth
+- Email/password login
+- OAuth (Google, GitHub)
+- Session management
+- Connects to: Database, API
+
+### Payments
+- Stripe integration
+- Wallet with balance
+- Subscription management
+- Connects to: Auth, Database, API
+
+### Dashboard
+- User overview
+- Usage charts
+- Settings page
+- Connects to: Auth, Payments, API
+```
+
+**Process:**
+
+1. **Parse the plan** — extract modules, features per module, and inter-module connections.
+
+2. **Generate doc skeleton** — for each module, create:
+   - `docs/src/content/<module>/index.mdx` — module overview with:
+     - Purpose (1-2 sentences from the plan)
+     - Module interaction diagram (Mermaid, auto-generated from connections)
+     - Feature list as stub sections (headers only, no content yet)
+     - Dependencies table
+   - `docs/src/content/<module>/_meta.ts` — navigation entries
+   - Update parent `_meta.ts` to include new modules
+
+3. **Generate system overview** — a top-level architecture page with:
+   - Full system diagram showing all modules and their connections
+   - Module table (name, purpose, status)
+   - This becomes the "map" that everything else references
+
+4. **Create module registry** — write `ystack.config.json` with module entries.
+
+5. **Create epic beads** — one epic per module, child beads per feature:
+   ```
+   bd create "Auth Module" -t epic --metadata '{"doc": "auth"}'
+   bd create "Email/password login" -t feature --parent bd-xxxx
+   bd create "OAuth (Google, GitHub)" -t feature --parent bd-xxxx
+   bd create "Session management" -t feature --parent bd-xxxx
+   ```
+
+6. **Add inter-module dependencies** where features cross boundaries:
+   ```
+   bd dep add bd-payments-wallet blocks:bd-dashboard-usage
+   ```
+
+7. **Present skeleton to user** — show the doc structure, module diagram, and bead graph. Ask for corrections.
+
+**Output:** A project with:
+- Doc skeleton (overviews with diagrams, feature stubs)
+- Module registry linking code ↔ docs ↔ beads
+- Epic beads with feature children
+- A clear "ready front" — features with no blockers that you can `/build` first
+
+**Key design:** The skeleton is intentionally shallow — module overviews and interaction diagrams only. No detailed specs. Those get written as features are implemented via `/docs`. This keeps docs honest: they describe what IS, not what's planned. The stubs show structure, the beads track what's left.
+
+---
+
+### `/import` — Adopt an Existing Project
+
+Analyzes an existing repo and generates the module registry, doc stubs, and Beads state. This is the on-ramp for projects that already have code (and possibly docs).
+
+**When to use:** You have an existing codebase and want to bring it into the ystack workflow.
+
+**Process:**
+
+1. **Scan codebase** — spawn parallel agents to analyze:
+   - **Structure agent:** package.json files, directory tree, monorepo layout → module boundaries
+   - **Dependency agent:** imports, package.json deps → inter-module connections
+   - **Schema agent:** database schemas, API routes, type definitions → data model inventory
+   - **Docs agent:** existing docs, README files, CLAUDE.md → current documentation state
+
+2. **Detect modules** — group code into logical modules based on:
+   - Package boundaries (monorepo packages/apps)
+   - Directory structure (feature folders)
+   - Import patterns (what depends on what)
+
+3. **Scan existing docs** — if docs exist:
+   - Map doc pages to detected modules
+   - Identify documented vs. undocumented modules
+   - Check for stale docs (code changed, docs didn't)
+
+4. **Generate module registry** — write `ystack.config.json` with discovered modules.
+
+5. **Create epic beads** — one per module. For each:
+   - Analyze code to identify implemented features
+   - Create child beads, marking implemented ones as **closed**
+   - Mark undocumented features with label `needs-docs`
+   - Mark features with stale docs with label `docs-stale`
+
+6. **Generate gap report:**
+   ```markdown
+   # Import Report
+
+   ## Modules Detected: 8
+   - payments (3 features, all documented)
+   - auth (4 features, 2 undocumented)
+   - admin (5 features, 1 stale doc)
+   ...
+
+   ## Documentation Gaps
+   - auth/oauth: implemented but no docs
+   - auth/sessions: implemented but no docs
+   - admin/campaigns: docs reference old API shape
+
+   ## Suggested Next Steps
+   1. Run /docs to update 3 gap pages
+   2. Review stale docs for admin/campaigns
+   3. /build for any new features
+   ```
+
+7. **Create doc stubs** for undocumented modules (if docs site exists) or offer to scaffold with `/skeleton`.
+
+**Key design:** This is a long-running process. For a large repo it could take several minutes with parallel agents. Progress should be visible. The output is conservative — it creates beads and a registry but doesn't modify existing docs without user confirmation.
+
+**Incremental adoption:** You don't have to import everything at once. `/import --module payments` can import a single module.
+
+---
+
+### `/build <feature>` — Plan
+
+The entry point for implementing a feature.
+
+**Process:**
+
+1. **Check status** — `bd ready` for in-progress work. If resuming, show context.
+
+2. **Find module** — match feature description to module registry. If ambiguous, ask.
+
+3. **Read docs** — load the module's doc page to understand current spec.
+
+4. **Read code** — load the module's packages to understand current implementation.
+
+5. **Surface assumptions:**
+   ```
+   I'd approach this by:
+   1. Adding a refundReason enum column to the transactions table
+   2. Accepting it in POST /api/payments/refund
+   3. Displaying as a badge in admin transaction detail
+
+   Assumptions:
+   - Enum values: duplicate, fraud, requested, other
+   - Column on transactions, not a separate table
+
+   Correct anything, or confirm.
+   ```
+
+6. **Capture decisions** → `.context/DECISIONS.md`
+
+7. **Create plan** → `.context/PLAN.md` with goal-backward success criteria.
+
+8. **Create child beads** under the module's epic with dependencies.
+
+9. **Plan-checker gate** — subagent validates plan delivers all decisions. Max 2 revisions.
+
+10. **Present plan** — wait for confirmation.
+
+**Small task detection:** 1 task, ≤3 files → "This is small — want me to just do it?"
+
+---
+
+### `/go` — Execute
+
+Runs the plan with fresh subagents.
+
+**Process:**
+
+1. Read `.context/PLAN.md`.
+2. Compute execution order from dependencies.
+3. Per task:
+   a. `bd update <id> --claim`
+   b. Spawn subagent with: task description + file targets + verification step
+   c. Subagent works in fresh context (reads only its target files)
+   d. Atomic commit on success
+   e. Update bead notes (COMPLETED / KEY DECISIONS format)
+   f. `bd close <id>`
+4. Report results.
+
+**Deviation rules:**
+- Auto-fix: minor bugs, missing imports, type errors
+- STOP and ask: architectural decisions, scope changes
+
+---
+
+### `/review` — Code Review + Verification
+
+Reviews changes and verifies against success criteria.
+
+**Process:**
+
+1. Load project rules (.claude/rules/, CLAUDE.md, contributor guidance, design guide).
+2. Read diff (all changes since before `/go`).
+3. Check: security, accessibility, performance, style, types, error handling.
+4. Goal-backward verification — check each success criterion against actual code.
+5. Output findings with file:line references.
+6. User decides: fix or accept.
+
+---
+
+### `/docs` — Update Documentation
+
+Updates docs for completed work. Only completed work.
+
+**Process:**
+
+1. Read module registry — which module was this work for?
+2. Read the module's epic — which children just closed?
+3. Read the module's doc page — what's currently documented?
+4. Update only the sections affected by newly completed features:
+   - New data model fields
+   - New API endpoints
+   - Updated flow diagrams
+   - Changed dependencies
+5. Mark beads as documented (label `documented`).
+6. Never add "planned" or "coming soon" content.
+
+Delegates to existing `docs-update` skill.
+
+---
+
+### `/pr` — Create PR
+
+**Process:**
+
+1. Final success criteria verification.
+2. Docs check — code changes without doc updates? Warn.
+3. `pnpm fix` + `pnpm typecheck`.
+4. Delegate to `pr-draft` skill.
+5. Verify all beads in scope are closed.
+6. Clean up `.context/`.
+
+---
+
+## Hooks
+
+### Context Monitor (PostToolUse)
+- 60% context: suggest subagents for remaining work
+- 80%: suggest finishing current task
+
+### Session Start
+- Auto-detect project (`.beads/` + `ystack.config.json`)
+- Show: module status summary, ready front, in-progress work
+- If `.context/PLAN.md` exists: remind of in-progress plan
+
+### Workflow Nudge (PreToolUse on Edit)
+- Editing code with no plan: "Consider `/build` for tracked changes."
+
+---
+
+## Design Principles
+
+### From GSD
+1. **Plans are prompts** — PLAN.md is the subagent's literal prompt
+2. **Goal-backward verification** — success criteria against actual code
+3. **Fresh context per agent** — clean context window per task
+4. **Scope reduction prohibition** — never silently simplify
+5. **Plan-checker gate** — validate before execution
+
+### From Beads
+6. **Beads is the state layer** — don't reinvent task tracking
+7. **Structured notes** — COMPLETED / IN PROGRESS / NEXT / KEY DECISIONS / BLOCKERS
+8. **Ready fronts** — `bd ready` drives work selection
+9. **Epics as module trackers** — parent-child for module → features
+
+### Our Own
+10. **Docs are final state only** — never "planned" or "in progress"
+11. **Module registry** — the bridge between code, docs, and beads
+12. **Skeleton-first** — start with structure, fill in as you build
+13. **Import existing** — on-ramp for repos that already have code
+14. **7 commands** — skeleton, import, build, go, review, docs, pr
+
+---
+
+## The `.context/` Directory
+
+Ephemeral working files during active feature work. Gitignored.
 
 ```
-ystack/
-├── skills/
-│   ├── build/
-│   │   ├── SKILL.md
-│   │   └── resources/
-│   │       └── plan-checker.md
-│   ├── go/
-│   │   ├── SKILL.md
-│   │   └── resources/
-│   │       └── executor.md
-│   ├── review/SKILL.md
-│   ├── docs/SKILL.md
-│   └── pr/SKILL.md
-├── hooks/
-│   ├── context-monitor.js
-│   ├── session-start.sh
-│   └── workflow-nudge.js
-├── templates/
-│   ├── DECISIONS.md
-│   └── PLAN.md
-├── docs/
-│   ├── getting-started.md
-│   ├── commands.md
-│   ├── workflow.md
-│   └── beads-integration.md
-├── examples/
-│   ├── monorepo/
-│   └── single-app/
-├── install.js
-├── package.json
-├── CLAUDE.md
-├── README.md
-└── LICENSE
+.context/
+├── DECISIONS.md     # Locked choices from /build
+└── PLAN.md          # Execution plan (subagent prompt)
 ```
+
+Everything persistent lives in Beads. Everything shared lives in docs.
+
+---
+
+## Build Order
+
+| Phase | What | Value |
+|-------|------|-------|
+| **1** | Module registry format + `ystack.config.json` | Foundation everything builds on |
+| **2** | `/build` — doc reading, assumptions, planning | Standalone planning tool |
+| **3** | `/go` — execution with fresh subagents | Core loop: build → go |
+| **4** | `/review` — code review + verification | Quality gate |
+| **5** | `/docs` — doc sync for completed work | Docs stay current |
+| **6** | `/pr` — shipping chain | Wraps pr-draft |
+| **7** | `/skeleton` — new project scaffolding | New project on-ramp |
+| **8** | `/import` — existing project adoption | Existing project on-ramp (long-running, complex) |
+| **9** | Hooks + installer + docs | Polish and distribution |
 
 ---
 
 ## Open Questions
 
 1. **Beads version** — minimum `bd` version to depend on?
-2. **Docs framework** — start Nextra-native, generalize later?
+2. **Docs framework** — start Nextra-native, generalize to any markdown later?
 3. **Parallel execution** — should `/go` parallelize independent tasks from day 1?
-4. **Linear sync** — Beads supports `--external-ref linear:LIN-123`. Enable by default?
-5. **Beads formulas** — should ystack ship formula templates for common workflows?
+4. **Linear sync** — use Beads `--external-ref linear:LIN-123` by default?
+5. **Import depth** — how deep should `/import` analyze? Function-level or module-level?
+6. **Skeleton input** — accept markdown file, clipboard, or interactive Q&A?
+7. **Multi-repo** — should module registry support modules across repos?
