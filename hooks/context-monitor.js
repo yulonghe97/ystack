@@ -1,33 +1,30 @@
 /**
  * ystack context monitor — PostToolUse hook
  *
- * Tracks approximate context usage and warns when it gets high.
- * Runs after every tool call. Keeps state in an env-like counter.
+ * Warns when context usage gets high. Uses runtime-provided
+ * context metrics when available, stays silent otherwise.
+ *
+ * Supported env vars (set by the runtime):
+ *   CLAUDE_CONTEXT_TOKENS_USED  — tokens consumed so far
+ *   CLAUDE_CONTEXT_TOKENS_MAX   — total context window size
  */
 
-const toolCallCount = Number.parseInt(process.env.YSTACK_TOOL_COUNT || "0", 10) + 1;
+const used = Number.parseInt(process.env.CLAUDE_CONTEXT_TOKENS_USED || "0", 10);
+const max = Number.parseInt(process.env.CLAUDE_CONTEXT_TOKENS_MAX || "0", 10);
 
-// Approximate context thresholds based on tool call count
-// Average tool call consumes ~2-4k tokens of context
-// Claude Code has ~200k token context window
-// ~50 tool calls ≈ 60% usage, ~70 tool calls ≈ 80% usage
-const WARNING_THRESHOLD = 50;
-const CRITICAL_THRESHOLD = 70;
-
-if (toolCallCount === WARNING_THRESHOLD) {
-	console.log(
-		"[ystack] Context usage ~60%. Consider spawning subagents for remaining work, or finish current task.",
-	);
-} else if (toolCallCount === CRITICAL_THRESHOLD) {
-	console.log(
-		"[ystack] Context usage ~80%. Finish current task soon. Use /pause to save state if needed.",
-	);
-} else if (toolCallCount > CRITICAL_THRESHOLD && toolCallCount % 10 === 0) {
-	console.log(
-		"[ystack] Context is filling up. Wrap up current work.",
-	);
+// If the runtime doesn't expose context metrics, stay silent
+if (!used || !max) {
+	process.exit(0);
 }
 
-// Pass the count forward (hooks can't set env, so this is best-effort)
-// In practice, Claude Code hooks don't persist state between calls.
-// This serves as a template — real implementation would use a temp file.
+const pct = Math.round((used / max) * 100);
+
+if (pct >= 80) {
+	console.log(
+		`[ystack] Context ${pct}% full. Finish current task soon. Use /pause to save state if needed.`,
+	);
+} else if (pct >= 60) {
+	console.log(
+		`[ystack] Context ${pct}% full. Consider spawning subagents for remaining work.`,
+	);
+}
