@@ -79,7 +79,16 @@ Existing project:  repo → /import → /build → /go → /review → /docs →
 
 ## Getting Started
 
-See [INSTALL.md](./INSTALL.md) for installation, project setup, and configuration.
+```bash
+# New project
+npx ystack create my-app
+
+# Existing project
+cd your-project
+npx ystack init
+```
+
+See [INSTALL.md](./INSTALL.md) for full setup options, prerequisites, and configuration.
 
 ## Documentation
 
