@@ -60,7 +60,7 @@ my-app/
 ├── pnpm-workspace.yaml          # pnpm workspace definition
 ├── package.json                 # Root package with shared scripts
 ├── tsconfig.json                # Root TypeScript config
-├── ystack.config.json           # Module registry (empty, populated by /skeleton)
+├── ystack.config.json           # Module registry (empty, populated by /scaffold)
 ├── CLAUDE.md                    # AI context for Claude Code
 ├── AGENTS.md                    # AI context for other agents
 ├── .gitignore
@@ -109,7 +109,7 @@ my-app/
 
 ### With `--from plan.md`
 
-When you provide a plan file, `npx ystack create` also runs the `/skeleton` logic:
+When you provide a plan file, `npx ystack create` also runs the `/scaffold` logic:
 
 1. Parses the plan for modules, features, and connections
 2. Creates a package directory per module under `apps/` or `packages/`

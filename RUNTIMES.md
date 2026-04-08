@@ -31,7 +31,7 @@ ystack/
 │   │   ├── review.md
 │   │   ├── docs.md
 │   │   ├── pr.md
-│   │   ├── skeleton.md
+│   │   ├── scaffold.md
 │   │   └── import.md
 │   ├── agents/                  # Subagent prompts
 │   │   ├── plan-checker.md

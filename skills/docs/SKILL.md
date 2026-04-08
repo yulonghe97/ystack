@@ -156,5 +156,5 @@ If no project-specific doc skills exist, follow the process above.
 
 - **Does not document planned features.** Only completed, verified work.
 - **Does not rewrite entire pages.** Updates only affected sections.
-- **Does not create module scaffolds.** That's `/skeleton` or `docs-module`.
+- **Does not create module scaffolds.** That's `/scaffold`.
 - **Does not create PRs.** That's `/pr`.

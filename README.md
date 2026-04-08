@@ -56,7 +56,7 @@ Each module in `ystack.config.json` maps a doc page, code scope (glob patterns),
 
 | Command | What it does |
 |---------|-------------|
-| `/skeleton` | Takes a big plan, splits it into module doc stubs + interaction diagrams + epic beads |
+| `/scaffold` | Takes a big plan, splits it into module doc stubs + interaction diagrams + epic beads |
 | `/import` | Scans an existing repo, generates module registry, flags doc gaps |
 
 ### Build cycle
@@ -73,7 +73,7 @@ Each module in `ystack.config.json` maps a doc page, code scope (glob patterns),
 ### The flow
 
 ```
-New project:       big plan → /skeleton → /build → /go → /review → /docs → /pr
+New project:       big plan → /scaffold → /build → /go → /review → /docs → /pr
 Existing project:  repo → /import → /build → /go → /review → /docs → /pr
 ```
 
