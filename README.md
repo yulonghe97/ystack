@@ -39,6 +39,8 @@ The harness enforces five things:
 4. **Never simplify silently.** If the plan can't deliver what was decided, it splits into phases instead of cutting corners.
 5. **Update docs when done.** Documentation reflects the new reality before the PR is created.
 
+The harness also includes [agent linting](./LINTING.md) — rules that check agent behavior, not code style. Did the agent read the spec? Does the plan cover all decisions? Are docs updated? These rules grow with the harness: each new skill can ship its own lint rules.
+
 ## The Three Layers
 
 ```
@@ -181,6 +183,7 @@ When a feature bead closes, ystack knows which doc page to update. When `/build`
 ## Docs
 
 - [PHILOSOPHY.md](./PHILOSOPHY.md) — Design principles and rationale
+- [LINTING.md](./LINTING.md) — Agent linting — rules that grow with the harness
 - [PLAN.md](./PLAN.md) — Full roadmap and command specs
 
 ## Status
