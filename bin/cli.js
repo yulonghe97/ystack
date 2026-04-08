@@ -5,6 +5,7 @@ import { join, resolve, dirname } from "node:path";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
+import { createInterface } from "node:readline";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -16,42 +17,57 @@ const yellow = (s) => `\x1b[33m${s}\x1b[0m`;
 const red = (s) => `\x1b[31m${s}\x1b[0m`;
 const bold = (s) => `\x1b[1m${s}\x1b[0m`;
 const dim = (s) => `\x1b[2m${s}\x1b[0m`;
+const cyan = (s) => `\x1b[36m${s}\x1b[0m`;
 
 const args = process.argv.slice(2);
 const command = args[0];
 const flags = args.filter((a) => a.startsWith("--"));
-const positional = args.filter((a) => !a.startsWith("--"));
 
-function usage() {
-	console.log(`
-${bold("ystack")} — agent harness for doc-driven development
+// --- Prompt helpers ---
 
-${bold("Commands:")}
-  ${green("init")}              Add ystack to an existing project
-  ${green("init --skills-only")} Install skills only, skip hooks and config
-  ${green("update")}            Update skills to latest version
-  ${green("add --runtime <r>")} Add support for a runtime (claude-code)
-  ${green("remove")}            Remove ystack skills and hooks (keeps data)
-  ${green("create <name>")}     Scaffold a new project (coming soon)
+const rl = createInterface({ input: process.stdin, output: process.stdout });
 
-${bold("Options:")}
-  --runtime <name>  Specify runtime (default: auto-detect)
-  --skills-only     Install skills only
-  --help            Show this help
-
-${bold("Docs:")}
-  https://github.com/yulonghe97/ystack
-`);
+function ask(question, defaultVal) {
+	return new Promise((resolve) => {
+		const prompt = defaultVal
+			? `${cyan("?")} ${question} ${dim(`(${defaultVal})`)} `
+			: `${cyan("?")} ${question} `;
+		rl.question(prompt, (answer) => {
+			resolve(answer.trim() || defaultVal || "");
+		});
+	});
 }
 
-function detectRuntimes(projectRoot) {
-	const runtimes = [];
-	if (existsSync(join(projectRoot, ".claude"))) {
-		runtimes.push("claude-code");
-	}
-	// Future: detect .cursor/, AGENTS.md for codex, etc.
-	return runtimes.length > 0 ? runtimes : ["claude-code"]; // default
+function select(question, options, defaultIndex = 0) {
+	return new Promise((resolve) => {
+		console.log(`${cyan("?")} ${question}`);
+		for (let i = 0; i < options.length; i++) {
+			const marker = i === defaultIndex ? green("❯ ") : "  ";
+			console.log(`${marker}${options[i].label}`);
+		}
+		rl.question(`${dim(`  Enter choice [1-${options.length}]: `)}`, (answer) => {
+			const idx = Number.parseInt(answer, 10) - 1;
+			if (idx >= 0 && idx < options.length) {
+				resolve(options[idx].value);
+			} else {
+				resolve(options[defaultIndex].value);
+			}
+		});
+	});
 }
+
+function confirm(question, defaultYes = true) {
+	return new Promise((resolve) => {
+		const hint = defaultYes ? "Y/n" : "y/N";
+		rl.question(`${cyan("?")} ${question} ${dim(`(${hint})`)} `, (answer) => {
+			const a = answer.trim().toLowerCase();
+			if (a === "") resolve(defaultYes);
+			else resolve(a === "y" || a === "yes");
+		});
+	});
+}
+
+// --- File helpers ---
 
 function hashFile(path) {
 	if (!existsSync(path)) return null;
@@ -59,7 +75,45 @@ function hashFile(path) {
 	return createHash("sha256").update(content).digest("hex").slice(0, 12);
 }
 
-function copySkills(projectRoot, ystackRoot) {
+function commandExists(cmd) {
+	try {
+		execSync(`which ${cmd}`, { stdio: "ignore" });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function detectProjectName() {
+	// Try package.json
+	if (existsSync("package.json")) {
+		try {
+			const pkg = JSON.parse(readFileSync("package.json", "utf-8"));
+			if (pkg.name) return pkg.name.replace(/^@[^/]+\//, "");
+		} catch { /* ignore */ }
+	}
+	// Fall back to directory name
+	return process.cwd().split("/").pop();
+}
+
+function detectDocsFramework() {
+	if (existsSync("docs/src/content/_meta.ts")) return { framework: "nextra", root: "docs/src/content" };
+	if (existsSync("content/docs/meta.json")) return { framework: "fumadocs", root: "content/docs" };
+	if (existsSync("docs/_meta.ts")) return { framework: "nextra", root: "docs" };
+	return null;
+}
+
+function detectMonorepo() {
+	if (existsSync("turbo.json")) return "turborepo";
+	if (existsSync("pnpm-workspace.yaml")) return "pnpm";
+	if (existsSync("lerna.json")) return "lerna";
+	if (existsSync("nx.json")) return "nx";
+	return null;
+}
+
+// --- Skill installation ---
+
+function copySkills(projectRoot, ystackRoot, silent = false) {
 	const skillsDir = join(ystackRoot, "skills");
 	const targetDir = join(projectRoot, ".claude", "skills");
 	const skills = readdirSync(skillsDir).filter((d) =>
@@ -77,24 +131,20 @@ function copySkills(projectRoot, ystackRoot) {
 
 		if (!existsSync(srcSkill)) continue;
 
-		// Check if target exists and was customized
 		if (existsSync(dstSkill)) {
 			const srcHash = hashFile(srcSkill);
 			const dstHash = hashFile(dstSkill);
 			if (srcHash !== dstHash) {
-				console.log(
-					yellow(`  ⚠ ${skill}/ — customized, skipping (use --force to overwrite)`),
-				);
+				if (!silent) console.log(yellow(`  ⚠ ${skill}/ — customized, skipping`));
 				skipped++;
 				continue;
 			}
 		}
 
-		// Copy skill directory
 		mkdirSync(dst, { recursive: true });
 		cpSync(src, dst, { recursive: true });
 		installed++;
-		console.log(green(`  ✓ ${skill}/`));
+		if (!silent) console.log(green(`  ✓ ${skill}/`));
 	}
 
 	return { installed, skipped, total: skills.length };
@@ -107,57 +157,43 @@ function installHooks(projectRoot, ystackRoot) {
 	if (existsSync(settingsPath)) {
 		try {
 			settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
-		} catch {
-			console.log(yellow("  ⚠ Could not parse .claude/settings.json, creating new"));
-		}
+		} catch { /* create new */ }
 	}
 
-	// Ensure hooks structure
 	if (!settings.hooks) settings.hooks = {};
 
-	// Add PostToolUse hooks
+	// PostToolUse — context monitor
 	if (!settings.hooks.PostToolUse) settings.hooks.PostToolUse = [];
-
 	const hasContextMonitor = settings.hooks.PostToolUse.some(
-		(h) => h.command && h.command.includes("context-monitor"),
+		(h) => h.hooks?.some((hh) => hh.command?.includes("context-monitor")),
 	);
-
 	if (!hasContextMonitor) {
 		settings.hooks.PostToolUse.push({
 			matcher: "*",
-			hooks: [
-				{
-					type: "command",
-					command: `node "${join(projectRoot, ".claude", "hooks", "context-monitor.js")}"`,
-					timeout: 5,
-				},
-			],
+			hooks: [{
+				type: "command",
+				command: `node "${join(projectRoot, ".claude", "hooks", "context-monitor.js")}"`,
+				timeout: 5,
+			}],
 		});
-		console.log(green("  ✓ context-monitor hook"));
 	}
 
-	// Add PreToolUse hooks for workflow nudge
+	// PreToolUse — workflow nudge
 	if (!settings.hooks.PreToolUse) settings.hooks.PreToolUse = [];
-
 	const hasWorkflowNudge = settings.hooks.PreToolUse.some(
-		(h) => h.command && h.command.includes("workflow-nudge"),
+		(h) => h.hooks?.some((hh) => hh.command?.includes("workflow-nudge")),
 	);
-
 	if (!hasWorkflowNudge) {
 		settings.hooks.PreToolUse.push({
 			matcher: "Edit|Write",
-			hooks: [
-				{
-					type: "command",
-					command: `node "${join(projectRoot, ".claude", "hooks", "workflow-nudge.js")}"`,
-					timeout: 5,
-				},
-			],
+			hooks: [{
+				type: "command",
+				command: `node "${join(projectRoot, ".claude", "hooks", "workflow-nudge.js")}"`,
+				timeout: 5,
+			}],
 		});
-		console.log(green("  ✓ workflow-nudge hook"));
 	}
 
-	// Write settings
 	mkdirSync(dirname(settingsPath), { recursive: true });
 	writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
 
@@ -168,27 +204,19 @@ function installHooks(projectRoot, ystackRoot) {
 
 	if (existsSync(hooksDir)) {
 		for (const file of readdirSync(hooksDir)) {
-			const src = join(hooksDir, file);
-			const dst = join(targetHooksDir, file);
-			cpSync(src, dst);
+			cpSync(join(hooksDir, file), join(targetHooksDir, file));
 		}
-		console.log(green("  ✓ hook files copied"));
 	}
 }
 
 function removeSkills(projectRoot) {
-	const skillsDir = join(projectRoot, ".claude", "skills");
 	const ystackSkills = join(YSTACK_ROOT, "skills");
-
 	if (!existsSync(ystackSkills)) return;
 
-	const skills = readdirSync(ystackSkills).filter((d) =>
-		statSync(join(ystackSkills, d)).isDirectory(),
-	);
-
-	for (const skill of skills) {
+	const skillsDir = join(projectRoot, ".claude", "skills");
+	for (const skill of readdirSync(ystackSkills)) {
 		const target = join(skillsDir, skill);
-		if (existsSync(target)) {
+		if (existsSync(target) && statSync(join(ystackSkills, skill)).isDirectory()) {
 			rmSync(target, { recursive: true });
 			console.log(dim(`  removed ${skill}/`));
 		}
@@ -201,7 +229,6 @@ function removeHooks(projectRoot) {
 
 	try {
 		const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
-
 		if (settings.hooks?.PostToolUse) {
 			settings.hooks.PostToolUse = settings.hooks.PostToolUse.filter(
 				(h) => !h.hooks?.some((hh) => hh.command?.includes("context-monitor")),
@@ -212,22 +239,15 @@ function removeHooks(projectRoot) {
 				(h) => !h.hooks?.some((hh) => hh.command?.includes("workflow-nudge")),
 			);
 		}
-
 		writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
-		console.log(dim("  removed hooks from settings.json"));
-	} catch {
-		console.log(yellow("  ⚠ Could not parse settings.json"));
-	}
+	} catch { /* ignore */ }
 
-	// Remove hook files
 	const hooksDir = join(projectRoot, ".claude", "hooks");
 	for (const file of ["context-monitor.js", "session-start.sh", "workflow-nudge.js"]) {
 		const target = join(hooksDir, file);
-		if (existsSync(target)) {
-			rmSync(target);
-			console.log(dim(`  removed ${file}`));
-		}
+		if (existsSync(target)) rmSync(target);
 	}
+	console.log(dim("  removed hooks"));
 }
 
 function ensureGitignore(projectRoot) {
@@ -237,128 +257,176 @@ function ensureGitignore(projectRoot) {
 	const content = readFileSync(gitignorePath, "utf-8");
 	if (!content.includes(".context/")) {
 		writeFileSync(gitignorePath, content.trimEnd() + "\n.context/\n");
-		console.log(green("  ✓ added .context/ to .gitignore"));
 	}
-}
-
-function createConfig(projectRoot) {
-	const configPath = join(projectRoot, "ystack.config.json");
-	if (existsSync(configPath)) {
-		console.log(dim("  ystack.config.json already exists, skipping"));
-		return;
-	}
-
-	// Detect docs framework
-	let docsRoot = null;
-	let framework = "unknown";
-
-	if (existsSync(join(projectRoot, "docs", "src", "content", "_meta.ts"))) {
-		docsRoot = "docs/src/content";
-		framework = "nextra";
-	} else if (existsSync(join(projectRoot, "content", "docs", "meta.json"))) {
-		docsRoot = "content/docs";
-		framework = "fumadocs";
-	} else if (existsSync(join(projectRoot, "docs"))) {
-		docsRoot = "docs";
-	}
-
-	// Detect monorepo
-	const isMonorepo = existsSync(join(projectRoot, "turbo.json")) ||
-		existsSync(join(projectRoot, "pnpm-workspace.yaml")) ||
-		existsSync(join(projectRoot, "lerna.json"));
-
-	const config = {
-		project: projectRoot.split("/").pop(),
-		docs: {
-			root: docsRoot,
-			framework,
-		},
-		monorepo: {
-			enabled: isMonorepo,
-		},
-		modules: {},
-		workflow: {
-			plan_checker: true,
-			fresh_context_per_task: true,
-			auto_docs_check: true,
-		},
-	};
-
-	writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
-	console.log(green("  ✓ created ystack.config.json"));
 }
 
 // --- Commands ---
 
-function cmdInit() {
+async function cmdInit() {
 	const projectRoot = process.cwd();
 	const skillsOnly = flags.includes("--skills-only");
 
-	console.log(bold("\nystack init\n"));
+	console.log(`\n${bold("ystack init")} — agent harness for doc-driven development\n`);
 
-	// Detect runtimes
-	const runtimes = detectRuntimes(projectRoot);
-	console.log(dim(`  detected: ${runtimes.join(", ")}\n`));
+	// --- Step 1: Project name ---
+	const detectedName = detectProjectName();
+	const projectName = await ask("Project name:", detectedName);
 
-	// Install skills
+	// --- Step 2: Docs framework ---
+	const detectedDocs = detectDocsFramework();
+	let docsFramework;
+	let docsRoot;
+
+	if (detectedDocs) {
+		console.log(dim(`  detected: ${detectedDocs.framework} at ${detectedDocs.root}`));
+		const keepDetected = await confirm(`Use ${detectedDocs.framework}?`);
+		if (keepDetected) {
+			docsFramework = detectedDocs.framework;
+			docsRoot = detectedDocs.root;
+		}
+	}
+
+	if (!docsFramework) {
+		docsFramework = await select("Docs framework:", [
+			{ label: "Nextra", value: "nextra" },
+			{ label: "Fumadocs", value: "fumadocs" },
+			{ label: "None — I'll set up docs later", value: "none" },
+		]);
+
+		if (docsFramework === "nextra") {
+			docsRoot = await ask("Docs root:", "docs/src/content");
+		} else if (docsFramework === "fumadocs") {
+			docsRoot = await ask("Docs root:", "content/docs");
+		} else {
+			docsRoot = null;
+		}
+	}
+
+	// --- Step 3: Beads ---
+	let initBeads = false;
+	if (!skillsOnly) {
+		const hasBeads = existsSync(join(projectRoot, ".beads"));
+		const hasBdCli = commandExists("bd");
+
+		if (hasBeads) {
+			console.log(dim("  Beads already initialized"));
+		} else if (hasBdCli) {
+			initBeads = await confirm("Initialize Beads for persistent memory?");
+		} else {
+			const installBeads = await select("Beads (persistent memory for agents):", [
+				{ label: "Install Beads (brew install gastownhall/tap/beads)", value: "install" },
+				{ label: "Skip — I'll set up Beads later", value: "skip" },
+			]);
+
+			if (installBeads === "install") {
+				console.log(`\n${bold("Installing Beads...")}`);
+				try {
+					execSync("brew install gastownhall/tap/beads", { stdio: "inherit" });
+					initBeads = true;
+				} catch {
+					console.log(yellow("  ⚠ Brew install failed. Install manually: brew install gastownhall/tap/beads"));
+					console.log(yellow("    or: go install github.com/gastownhall/beads/cmd/bd@latest"));
+				}
+			}
+		}
+	}
+
+	// --- Step 4: Runtime ---
+	const runtime = await select("Runtime:", [
+		{ label: "Claude Code", value: "claude-code" },
+		{ label: "Claude Code (skills only, no hooks)", value: "claude-code-minimal" },
+	]);
+
+	// --- Step 5: Hooks ---
+	let installHooksFlag = true;
+	if (!skillsOnly && runtime === "claude-code") {
+		installHooksFlag = await confirm("Install agent linting hooks?");
+	} else if (runtime === "claude-code-minimal") {
+		installHooksFlag = false;
+	}
+
+	// --- Execute ---
+	console.log(`\n${bold("Setting up...")}\n`);
+
+	// Skills
 	console.log(bold("Skills:"));
 	mkdirSync(join(projectRoot, ".claude", "skills"), { recursive: true });
 	const result = copySkills(projectRoot, YSTACK_ROOT);
-	console.log(
-		dim(`  ${result.installed} installed, ${result.skipped} skipped\n`),
-	);
+	console.log(dim(`  ${result.installed} installed, ${result.skipped} skipped\n`));
 
-	if (!skillsOnly) {
-		// Install hooks
+	// Hooks
+	if (installHooksFlag) {
 		console.log(bold("Hooks:"));
 		installHooks(projectRoot, YSTACK_ROOT);
+		console.log(green("  ✓ context-monitor (PostToolUse)"));
+		console.log(green("  ✓ workflow-nudge (PreToolUse on Edit)"));
 		console.log();
+	}
 
-		// Create config
-		console.log(bold("Config:"));
-		createConfig(projectRoot);
-		ensureGitignore(projectRoot);
-		console.log();
+	// Config
+	console.log(bold("Config:"));
+	const configPath = join(projectRoot, "ystack.config.json");
+	if (existsSync(configPath)) {
+		console.log(dim("  ystack.config.json already exists, preserving"));
+	} else {
+		const monorepo = detectMonorepo();
+		const config = {
+			project: projectName,
+			docs: {
+				root: docsRoot,
+				framework: docsFramework === "none" ? null : docsFramework,
+			},
+			monorepo: {
+				enabled: !!monorepo,
+				...(monorepo ? { tool: monorepo } : {}),
+			},
+			modules: {},
+			workflow: {
+				plan_checker: true,
+				fresh_context_per_task: true,
+				auto_docs_check: true,
+			},
+		};
+		writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
+		console.log(green("  ✓ created ystack.config.json"));
+	}
 
-		// Check for Beads
+	ensureGitignore(projectRoot);
+	console.log(green("  ✓ .context/ added to .gitignore"));
+	console.log();
+
+	// Beads
+	if (initBeads) {
 		console.log(bold("Beads:"));
-		if (existsSync(join(projectRoot, ".beads"))) {
-			console.log(green("  ✓ .beads/ detected"));
-		} else {
-			try {
-				execSync("which bd", { stdio: "ignore" });
-				console.log(
-					yellow("  ⚠ bd CLI found but .beads/ not initialized. Run: bd init"),
-				);
-			} catch {
-				console.log(
-					yellow("  ⚠ Beads not installed. Install: brew install gastownhall/tap/beads"),
-				);
-			}
+		try {
+			execSync("bd init", { stdio: "inherit", cwd: projectRoot });
+			console.log(green("  ✓ Beads initialized"));
+		} catch {
+			console.log(yellow("  ⚠ bd init failed — run it manually"));
 		}
 		console.log();
 	}
 
-	console.log(bold("Done!\n"));
+	// --- Done ---
+	console.log(`${bold(green("Done!"))}\n`);
 	console.log("Next steps:");
-	console.log(`  ${green("/import")}  — scan codebase and populate module registry`);
-	console.log(`  ${green("/build")}   — plan a feature`);
-	console.log();
+	console.log(`  ${cyan("/import")}  — scan codebase and populate module registry`);
+	console.log(`  ${cyan("/build")}   — plan a feature`);
+	console.log(`  ${cyan("/skeleton")} — scaffold docs from a plan\n`);
+
+	rl.close();
 }
 
-function cmdUpdate() {
+async function cmdUpdate() {
 	const projectRoot = process.cwd();
 
-	console.log(bold("\nystack update\n"));
+	console.log(`\n${bold("ystack update")}\n`);
 
 	console.log(bold("Skills:"));
 	const result = copySkills(projectRoot, YSTACK_ROOT);
-	console.log(
-		dim(`  ${result.installed} updated, ${result.skipped} customized (preserved)\n`),
-	);
+	console.log(dim(`  ${result.installed} updated, ${result.skipped} customized (preserved)\n`));
 
 	console.log(bold("Hooks:"));
-	// Re-copy hook files (not settings.json — those are merged on init)
 	const hooksDir = join(YSTACK_ROOT, "hooks");
 	const targetHooksDir = join(projectRoot, ".claude", "hooks");
 	if (existsSync(hooksDir) && existsSync(targetHooksDir)) {
@@ -370,37 +438,60 @@ function cmdUpdate() {
 		console.log(dim("  no hooks to update\n"));
 	}
 
-	console.log(bold("Done!\n"));
+	console.log(`${bold(green("Done!"))}\n`);
+	rl.close();
 }
 
-function cmdRemove() {
+async function cmdRemove() {
 	const projectRoot = process.cwd();
 
-	console.log(bold("\nystack remove\n"));
+	console.log(`\n${bold("ystack remove")}\n`);
 
-	console.log(bold("Removing skills:"));
+	const proceed = await confirm("Remove ystack skills and hooks? (keeps config, beads, docs)");
+	if (!proceed) {
+		console.log(dim("\nCancelled.\n"));
+		rl.close();
+		return;
+	}
+
+	console.log(`\n${bold("Removing skills:")}`);
 	removeSkills(projectRoot);
-	console.log();
 
-	console.log(bold("Removing hooks:"));
+	console.log(`\n${bold("Removing hooks:")}`);
 	removeHooks(projectRoot);
-	console.log();
 
-	console.log(dim("Kept: ystack.config.json, .beads/, docs/\n"));
-	console.log(bold("Done!\n"));
+	console.log(dim("\nKept: ystack.config.json, .beads/, docs/"));
+	console.log(`\n${bold(green("Done!"))}\n`);
+	rl.close();
 }
 
-function cmdCreate() {
-	const name = positional[1];
+async function cmdCreate() {
+	const name = args[1];
 	if (!name) {
-		console.log(red("Usage: ystack create <project-name>"));
+		console.log(red("\nUsage: ystack create <project-name>\n"));
+		rl.close();
 		process.exit(1);
 	}
-	console.log(
-		yellow(
-			"\nystack create is coming soon.\nFor now, set up your project manually and run: ystack init\n",
-		),
-	);
+	console.log(yellow("\nystack create is coming soon."));
+	console.log(yellow("For now, set up your project manually and run: ystack init\n"));
+	rl.close();
+}
+
+function usage() {
+	console.log(`
+${bold("ystack")} — agent harness for doc-driven development
+
+${bold("Commands:")}
+  ${green("init")}              Interactive setup — configure docs, beads, runtime, hooks
+  ${green("init --skills-only")} Install skills only, skip everything else
+  ${green("update")}            Update skills and hooks to latest version
+  ${green("remove")}            Remove ystack skills and hooks (keeps data)
+  ${green("create <name>")}     Scaffold a new project (coming soon)
+
+${bold("Docs:")}
+  https://github.com/yulonghe97/ystack
+`);
+	rl.close();
 }
 
 // --- Router ---
@@ -417,11 +508,6 @@ switch (command) {
 		break;
 	case "create":
 		cmdCreate();
-		break;
-	case "add":
-		// For now, just re-run init
-		console.log(dim("Running init to add runtime support...\n"));
-		cmdInit();
 		break;
 	case "--help":
 	case "-h":
