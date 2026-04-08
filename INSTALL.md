@@ -11,23 +11,18 @@
 
 ## New Project: `npx ystack create`
 
-> **Status: Stub only.** `npx ystack create` currently prints "coming soon" and exits. The full behavior described below is planned but not yet implemented. Use `npx ystack init` in an existing project for now.
-
 Creates a fully configured project with opinionated defaults.
 
 ```bash
-# Minimal — empty project with full tooling (planned)
+# Minimal — empty project with full tooling
 npx ystack create my-app
 
-# From a plan — scaffold modules from a markdown plan (planned)
-npx ystack create my-app --from plan.md
-
-# With options (planned — --runtime flag not yet implemented)
-npx ystack create my-app --from plan.md --runtime claude-code --runtime cursor
-
-# Choose docs framework (planned)
+# Choose docs framework
 npx ystack create my-app --docs nextra
 npx ystack create my-app --docs fumadocs
+
+# From a plan — scaffold modules from a markdown plan (coming soon)
+npx ystack create my-app --from plan.md
 ```
 
 ### What Gets Created
@@ -318,7 +313,7 @@ Skills and hooks are removed. Your data (registry, beads, docs) is never touched
 |------|---------------|-----|
 | **Node.js** 20+ | [nodejs.org](https://nodejs.org) | Runs the installer and Nextra |
 | **pnpm** | `npm install -g pnpm` | Workspace package management |
-| **Beads** (`bd`) | `brew install gastownhall/tap/beads` or `go install github.com/gastownhall/beads/cmd/bd@latest` | Persistent memory layer |
+| **Beads** (`bd`) | `brew install beads` or `npm install -g @beads/bd` | Persistent memory layer |
 
 ### Included in `create` (not required for `init`)
 
@@ -340,11 +335,11 @@ Skills and hooks are removed. Your data (registry, beads, docs) is never touched
 
 ## Quick Start
 
-### New project from scratch (planned — `npx ystack create` is a stub)
+### New project from scratch
 
 ```bash
-# Create project with plan (planned — currently prints "coming soon")
-npx ystack create my-app --from plan.md
+# Create project
+npx ystack create my-app
 
 # Enter project
 cd my-app

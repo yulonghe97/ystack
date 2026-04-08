@@ -28,5 +28,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/yulonghe97/ystack.git"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.2.0"
   }
 }
