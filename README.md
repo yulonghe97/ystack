@@ -89,6 +89,7 @@ The **module registry** (`ystack.config.json`) bridges them: each module maps to
 | `/review` | Code review + goal-backward verification against success criteria. |
 | `/docs` | Updates documentation for completed work (only completed, never planned). |
 | `/pr` | Verify → docs check → create PR. |
+| `/fix` | Fetch PR review comments, triage by priority, address approved fixes. |
 
 ### The flow
 
@@ -97,7 +98,7 @@ New project:
   big plan → /skeleton → pick a module → /build → /go → /review → /docs → /pr
 
 Existing project:
-  repo → /import → /build → /go → /review → /docs → /pr
+  repo → /import → /build → /go → /review → /docs → /pr → /fix (if comments)
 ```
 
 ## Team Collaboration
