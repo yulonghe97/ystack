@@ -1,5 +1,8 @@
 # Agent Linting
 
+> **Status: Design Spec — Not Yet Implemented**
+> None of the agent lint rules, hook infrastructure (`hooks/agent-lint.js`), or per-skill `rules/*.json` files described below are built. This document is a design specification for a future version of ystack. v0.1 includes basic Claude Code hooks (context monitoring, file-count nudge) but not the structured rule system described here.
+
 ## Two Types of Linting
 
 **Code linting** checks what the code looks like — formatting, syntax, style. Tools like Ultracite/Biome handle this. You configure it once and it covers all code. Adding a new feature doesn't mean adding new rules.
