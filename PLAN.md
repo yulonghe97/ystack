@@ -308,9 +308,9 @@ The entry point for implementing a feature.
    Correct anything, or confirm.
    ```
 
-6. **Capture decisions** → `.context/DECISIONS.md`
+6. **Capture decisions** → `.context/<bead-id>/DECISIONS.md`
 
-7. **Create plan** → `.context/PLAN.md` with goal-backward success criteria.
+7. **Create plan** → `.context/<bead-id>/PLAN.md` with goal-backward success criteria.
 
 8. **Create child beads** under the module's epic with dependencies.
 
@@ -328,7 +328,7 @@ Runs the plan with fresh subagents.
 
 **Process:**
 
-1. Read `.context/PLAN.md`.
+1. Read `.context/<bead-id>/PLAN.md`.
 2. Compute execution order from dependencies.
 3. Per task:
    a. `bd update <id> --claim`
@@ -390,7 +390,7 @@ Delegates to existing `docs-update` skill.
 3. `pnpm fix` + `pnpm typecheck`.
 4. Delegate to `pr-draft` skill.
 5. Verify all beads in scope are closed.
-6. Clean up `.context/`.
+6. Clean up `.context/<bead-id>/`.
 
 ---
 
@@ -403,10 +403,10 @@ Delegates to existing `docs-update` skill.
 ### Session Start
 - Auto-detect project (`.beads/` + `ystack.config.json`)
 - Show: module status summary, ready front, in-progress work
-- If `.context/PLAN.md` exists: remind of in-progress plan
+- If `.context/` has active bead folders: remind of in-progress work
 
 ### Workflow Nudge (PreToolUse on Edit)
-- Editing code with no plan: "Consider `/build` for tracked changes."
+- Editing code with no active `.context/<bead-id>/PLAN.md`: "Consider `/build` for tracked changes."
 
 ---
 
@@ -436,15 +436,46 @@ Delegates to existing `docs-update` skill.
 
 ## The `.context/` Directory
 
-Ephemeral working files during active feature work. Gitignored.
+Ephemeral working files during active feature work. Gitignored. Scoped by bead ID so multiple agents/features can work in parallel without collisions.
 
 ```
 .context/
-├── DECISIONS.md     # Locked choices from /build
-└── PLAN.md          # Execution plan (subagent prompt)
+├── bd-a1b2/              # "Add refund reason" feature
+│   ├── DECISIONS.md
+│   └── PLAN.md
+├── bd-c3d4/              # "Add OAuth support" feature
+│   ├── DECISIONS.md
+│   └── PLAN.md
+└── bd-e5f6/              # "Dashboard charts" feature
+    ├── DECISIONS.md
+    └── PLAN.md
 ```
 
-Everything persistent lives in Beads. Everything shared lives in docs.
+Each `/build` creates `.context/<bead-id>/`. Each `/go` reads from the same folder. No collisions across parallel agents or features.
+
+### What Gets Committed vs. What Stays Ephemeral
+
+| Artifact | Committed? | Shared with team? | Why |
+|----------|-----------|-------------------|-----|
+| Docs (`docs/src/content/`) | Yes | Yes | Final state of the product |
+| Module registry (`ystack.config.json`) | Yes | Yes | Module map everyone needs |
+| CLAUDE.md / AGENTS.md | Yes | Yes | AI context for all agents |
+| Beads (`.beads/`) | Yes (Dolt refs) | Yes | Progress, notes, decisions — the development state machine |
+| `.context/<bead-id>/` | No | No | Temporary working files — consumed by `/go`, then cleaned up |
+
+The valuable parts of `.context/` flow to their permanent homes:
+
+```
+/build  →  .context/<bead-id>/DECISIONS.md  (temporary)
+                     ↓
+/go     →  bead structured notes             (committed via Beads)
+                     ↓
+/docs   →  doc pages                         (committed via git)
+                     ↓
+/pr     →  .context/<bead-id>/ cleaned up
+```
+
+Nothing is lost. Decisions get written into bead notes during execution. Outcomes get written into docs during `/docs`. The temporary files are just a working scratch pad for the active agent.
 
 ---
 
