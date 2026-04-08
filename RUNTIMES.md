@@ -1,5 +1,8 @@
 # Multi-Runtime Support
 
+> **Status: Future Roadmap / Design Spec**
+> This document describes a planned multi-runtime adapter architecture. It is NOT implemented. v0.1 supports Claude Code only. Everything below is retained as a roadmap and specification for future versions.
+
 ## The Problem
 
 AI coding agents all have different conventions:
@@ -15,7 +18,9 @@ AI coding agents all have different conventions:
 
 ystack's core logic — read docs, surface assumptions, create plans, verify against criteria — is just prompts. It works in any agent. The only thing that changes is how the prompts are packaged and delivered.
 
-## Architecture
+## Architecture (Planned)
+
+> **Not yet built.** The `core/prompts/` and `adapters/<runtime>/` structure below is the target design. In v0.1, skills are installed directly as `.claude/skills/` files for Claude Code only.
 
 ```
 ystack/
@@ -60,7 +65,7 @@ The prompts in `core/prompts/` are the actual skill logic. They reference:
 
 These are pure markdown instructions that any LLM can follow. They don't use Claude-specific features, tool names, or XML tags.
 
-### Adapters (runtime-specific)
+### Adapters (Planned — not yet implemented)
 
 Each adapter takes the core prompts and packages them for a specific runtime:
 
@@ -91,7 +96,7 @@ Each adapter takes the core prompts and packages them for a specific runtime:
 - Hook support via `.gemini/settings.json`
 - Task-based subagent execution
 
-## Capability Tiers
+## Capability Tiers (Planned)
 
 Not all runtimes can do everything. ystack degrades gracefully:
 
@@ -148,13 +153,15 @@ Regardless of runtime, every agent gets:
 
 5. **The workflow** — build → go → review → docs → pr is a process, not a tool feature. It works in any agent that can follow multi-step instructions.
 
-## Installation
+## Installation (Planned)
+
+> **v0.1:** Only `npx ystack init` (Claude Code) is implemented. The `--runtime` flags and multi-runtime detection described below are planned for a future version.
 
 ```bash
 # Auto-detect runtime
 npx ystack init
 
-# Specify runtime
+# Specify runtime (planned — not yet implemented)
 npx ystack init --claude-code
 npx ystack init --codex
 npx ystack init --cursor
@@ -162,21 +169,21 @@ npx ystack init --copilot
 npx ystack init --windsurf
 npx ystack init --gemini
 
-# Install multiple
+# Install multiple (planned)
 npx ystack init --claude-code --cursor
 
 # Update after ystack upgrade
 npx ystack update
 ```
 
-The installer:
+The installer (planned behavior):
 1. Detects which runtimes are present (checks for `.claude/`, `.cursor/`, `AGENTS.md`, etc.)
 2. Reads `core/` prompts
 3. Applies the appropriate adapter
 4. Writes files to the runtime's expected locations
 5. Preserves any existing configuration (merges, doesn't overwrite)
 
-## Contributing an Adapter
+## Contributing an Adapter (Future)
 
 To add support for a new runtime:
 

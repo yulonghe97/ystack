@@ -11,19 +11,21 @@
 
 ## New Project: `npx ystack create`
 
+> **Status: Stub only.** `npx ystack create` currently prints "coming soon" and exits. The full behavior described below is planned but not yet implemented. Use `npx ystack init` in an existing project for now.
+
 Creates a fully configured project with opinionated defaults.
 
 ```bash
-# Minimal — empty project with full tooling
+# Minimal — empty project with full tooling (planned)
 npx ystack create my-app
 
-# From a plan — scaffold modules from a markdown plan
+# From a plan — scaffold modules from a markdown plan (planned)
 npx ystack create my-app --from plan.md
 
-# With options
+# With options (planned — --runtime flag not yet implemented)
 npx ystack create my-app --from plan.md --runtime claude-code --runtime cursor
 
-# Choose docs framework (default: nextra)
+# Choose docs framework (planned)
 npx ystack create my-app --docs nextra
 npx ystack create my-app --docs fumadocs
 ```
@@ -182,7 +184,7 @@ cd your-project
 # Auto-detect runtimes
 npx ystack init
 
-# Specify runtimes
+# Specify runtimes (planned — --runtime flag not yet implemented)
 npx ystack init --runtime claude-code --runtime cursor
 
 # Minimal — skills only, skip tooling checks
@@ -199,9 +201,9 @@ npx ystack init --skills-only
 
 2. **Install skills** for detected runtimes:
    - Claude Code → `.claude/skills/`, hooks in `.claude/settings.json`
-   - Cursor → `.cursor/rules/*.mdc`
-   - Codex → appends to `AGENTS.md`
-   - etc. (see [RUNTIMES.md](./RUNTIMES.md))
+   - Cursor → `.cursor/rules/*.mdc` (planned — not yet implemented)
+   - Codex → appends to `AGENTS.md` (planned — not yet implemented)
+   - etc. (see [RUNTIMES.md](./RUNTIMES.md) — multi-runtime support is planned)
 
 3. **Create `ystack.config.json`** with detected settings:
    ```json
@@ -274,13 +276,15 @@ When you customize a skill (edit a SKILL.md), ystack tracks this. On update:
 
 ---
 
-## Adding a Runtime
+## Adding a Runtime (Planned — not yet implemented)
+
+> **Status:** The `ystack add --runtime` command does not exist yet. Multi-runtime support is planned for a future version.
 
 ```bash
-# Add Cursor support to existing ystack project
+# Add Cursor support to existing ystack project (planned)
 npx ystack add --runtime cursor
 
-# What happens:
+# What happens (planned):
 # 1. Reads core prompts (already installed)
 # 2. Applies cursor adapter → .cursor/rules/*.mdc
 # 3. Does not duplicate or modify Claude Code skills
@@ -336,10 +340,10 @@ Skills and hooks are removed. Your data (registry, beads, docs) is never touched
 
 ## Quick Start
 
-### New project from scratch
+### New project from scratch (planned — `npx ystack create` is a stub)
 
 ```bash
-# Create project with plan
+# Create project with plan (planned — currently prints "coming soon")
 npx ystack create my-app --from plan.md
 
 # Enter project
