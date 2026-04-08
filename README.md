@@ -1,10 +1,45 @@
 # ystack
 
-Doc-driven workflow orchestration for AI coding agents, built on top of [Beads](https://github.com/gastownhall/beads).
+An agent harness for doc-driven development — built on top of [Beads](https://github.com/gastownhall/beads).
 
-## The Idea
+## The Problem with AI Agents
 
-Your documentation should describe what your system IS — not what's planned, not what's in progress. Beads tracks the journey. Docs show the destination. ystack connects them.
+AI coding agents are capable but unstructured. Without guardrails, they:
+
+- **Hallucinate architecture** — invent module boundaries that don't exist
+- **Silently simplify** — deliver a "v1" of what you asked for instead of the real thing
+- **Lose context** — forget decisions from 20 minutes ago as the context window fills
+- **Skip verification** — mark tasks done without checking the code actually works
+- **Ignore docs** — write code that drifts from the documented design, or never update docs at all
+
+The fix isn't better models. It's a **harness** — a structure that constrains and guides agents so they work reliably, every time.
+
+## What is an Agent Harness?
+
+A harness doesn't do the work. It makes the work trustworthy.
+
+```
+Without harness:              With harness:
+
+"Build payments"              /build payments
+  → agent guesses               → reads docs/shared/payments.mdx
+  → writes code                  → surfaces assumptions, you confirm
+  → maybe works                  → creates plan with success criteria
+  → no docs updated              → /go executes with fresh subagents
+  → context rot after 30min      → /review verifies against criteria
+                                 → /docs updates affected pages
+                                 → /pr ships with confidence
+```
+
+The harness enforces five things:
+
+1. **Read the spec first.** Before writing code, the agent reads the relevant doc page. No guessing.
+2. **Plan before executing.** The agent shows you what it will do. You confirm or correct.
+3. **Verify against criteria.** After execution, goal-backward verification checks the codebase — "does this column exist? Is this endpoint wired?" — not "did the task complete?"
+4. **Never simplify silently.** If the plan can't deliver what was decided, it splits into phases instead of cutting corners.
+5. **Update docs when done.** Documentation reflects the new reality before the PR is created.
+
+## The Three Layers
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
@@ -18,13 +53,21 @@ Your documentation should describe what your system IS — not what's planned, n
                     (ystack.config.json)
 ```
 
+| Layer | Role | Owned by |
+|-------|------|----------|
+| **Docs** | What the system IS. The spec an AI reads, the reference your team reads, the contract between modules. Written once, serves all three. | Nextra / MDX |
+| **Beads** | The development state machine. What's built, what's in progress, what's blocked. Persistent memory that survives context resets. | Beads (`bd`) |
+| **Code** | The implementation. Doesn't need to explain itself — the architecture lives in docs, the progress lives in Beads. | Your repo |
+
+The **module registry** (`ystack.config.json`) bridges them: each module maps to a doc page, code packages, and a Beads epic.
+
 **Three principles** drive the design (see [PHILOSOPHY.md](./PHILOSOPHY.md) for the full rationale):
 
-1. **Documentation is the operating system.** A doc page is simultaneously the spec an AI reads, the reference your team reads, and the contract between modules. You write it once — it serves all three purposes.
+1. **Documentation is the operating system.** Agents get a pointer ("read `shared/payments.mdx`"), not a 500-line paste. Doc pages are highly cross-referenced so agents navigate the graph incrementally.
 
-2. **References, not dumps.** Agents get a pointer ("read `shared/payments.mdx`"), not a 500-line paste. Doc pages are highly cross-referenced so agents navigate the graph incrementally, the same way humans do.
+2. **Final state only.** Docs describe what's built and working. Beads tracks what's planned and in progress. The boundary is clean.
 
-3. **Final state only.** Docs describe what's built and working. Beads tracks what's planned and in progress. The boundary is clean — no "coming soon" in docs, no specs in Beads.
+3. **References, not dumps.** Clean, structured prose beats machine-generated metadata. The format that's good for humans turns out to be good for agents too.
 
 ## Commands
 
