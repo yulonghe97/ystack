@@ -1,0 +1,242 @@
+---
+name: build
+description: >
+  Plan a feature by reading documentation and code, surfacing assumptions, capturing
+  decisions, and creating an execution plan with goal-backward success criteria. Use this
+  skill when the user says 'build', '/build', 'implement', 'add feature', 'plan feature',
+  'I want to build', 'let me build', 'work on', or describes a feature they want to implement.
+  This is the entry point for the ystack workflow — it produces a PLAN.md that /go executes.
+user-invocable: true
+---
+
+# /build — Plan a Feature
+
+You are the planning phase of the ystack agent harness. Your job is to understand what needs to be built by reading documentation and code, surface your assumptions for the user to confirm, then produce an execution plan with goal-backward success criteria.
+
+**You do NOT write code.** You produce a plan that `/go` will execute.
+
+## Phase 0: Locate the Module
+
+Identify which module(s) this feature belongs to.
+
+1. Read `ystack.config.json` if it exists. Look for a matching module in the `modules` map:
+   ```bash
+   cat ystack.config.json
+   ```
+
+2. If no config exists or no match found, scan the docs directory structure:
+   ```bash
+   # Find docs root — check common locations
+   ls docs/src/content/_meta.ts 2>/dev/null || ls docs/_meta.ts 2>/dev/null || ls content/_meta.ts 2>/dev/null
+   ```
+
+3. Read the top-level `_meta.ts` to understand what modules exist.
+
+4. Match the user's feature description to a module. If ambiguous, ask:
+   > This could belong to **Payments** or **Managed Ads**. Which module should this feature live in?
+
+5. If this is a cross-module feature, identify the primary module (where the core logic lives) and secondary modules (where integration happens).
+
+## Phase 1: Read the Spec
+
+Read the module's documentation page to understand the current design.
+
+1. **Read the module overview** — the `index.mdx` file for the matched module:
+   ```
+   docs/src/content/<module>/index.mdx
+   ```
+   Extract: Purpose, Scope (in/out), Sub-modules, Dependencies (needs/provides), Key Contracts.
+
+2. **Read relevant sub-module pages** — if the feature maps to a specific sub-module, read that page too.
+
+3. **Read cross-referenced modules** — if the module's Dependencies table references other modules that this feature will touch, read their overview pages. Follow the cross-reference links in the docs.
+
+4. **Read the contributor guidance** — check if there are relevant conventions:
+   - `docs/src/content/contributing/index.mdx` for golden rules
+   - Module-specific conventions if they exist
+
+**Important:** Read the actual files. Do not guess what docs contain based on file names. The docs are the spec — they tell you what the system IS.
+
+## Phase 2: Read the Code
+
+Read the relevant source code to understand the current implementation.
+
+1. **Identify code packages** from the module registry or `CLAUDE.md` Structure section.
+
+2. **Read key files** — focus on:
+   - Schema files (database tables, types)
+   - API routes (endpoints, request/response shapes)
+   - Public interfaces (exported functions, tool definitions)
+   - Existing tests (what's already tested)
+
+3. **Do NOT read everything.** Read only what's relevant to the feature. Use the docs to guide which code matters — if the docs say "Payments uses Stripe Customer Balance", read the Stripe integration code, not the entire payments package.
+
+## Phase 3: Surface Assumptions
+
+Present your understanding of how to build this feature. Do NOT ask 20 questions — present a plan and let the user correct what's wrong.
+
+Format your assumptions as:
+
+```
+Based on the docs and code, here's how I'd approach this:
+
+1. [First concrete step with specific files/tables/endpoints]
+2. [Second step]
+3. [Third step]
+
+**Assumptions:**
+- [Specific technical assumption — e.g., "Column goes on the `transactions` table, not a new table"]
+- [Design assumption — e.g., "Enum values: duplicate, fraud, requested, other"]
+- [Scope assumption — e.g., "Admin detail view only, not the list view"]
+
+**Out of scope** (deferring these):
+- [Thing that's related but not part of this feature]
+
+Correct anything that's wrong, or confirm to proceed.
+```
+
+**Rules for assumptions:**
+- Be specific, not vague. "Add a column to the transactions table" not "update the database".
+- Reference actual file paths from the code you read.
+- Reference actual doc sections that inform your approach.
+- If the docs explicitly define a contract or scope boundary, follow it — don't assume differently.
+- If something is listed as "Out of Scope" in the module docs, it's out of scope for this feature too.
+
+**Wait for the user to confirm or correct before proceeding to Phase 4.**
+
+## Phase 4: Capture Decisions
+
+After the user confirms (or corrects) your assumptions, write the decisions file.
+
+Create the directory and file:
+```
+.context/<feature-id>/DECISIONS.md
+```
+
+Use a short, descriptive ID for the feature (e.g., `refund-reason`, `oauth-support`, `dashboard-charts`). If Beads is available (`bd` CLI), use the bead ID instead.
+
+**DECISIONS.md format:**
+
+```markdown
+# Decisions: <Feature Name>
+
+## Module
+<primary module> (+ secondary modules if cross-module)
+
+## Locked
+- [Decision 1 — specific, actionable]
+- [Decision 2]
+- [Decision 3]
+
+## Claude's Discretion
+- [Things the agent can decide — naming, file organization, minor implementation details]
+
+## Deferred
+- [Related work explicitly not part of this feature]
+
+## References
+- [Doc page read: docs/src/content/<module>/index.mdx]
+- [Doc page read: docs/src/content/<module>/<sub>.mdx]
+- [Code read: packages/<module>/src/<file>.ts]
+```
+
+## Phase 5: Create the Plan
+
+Write an execution plan with goal-backward success criteria.
+
+Create:
+```
+.context/<feature-id>/PLAN.md
+```
+
+**PLAN.md format:**
+
+```markdown
+# Plan: <Feature Name>
+
+## Success Criteria
+
+What must be TRUE in the codebase when this feature is done. Each criterion is independently verifiable — a grep, a typecheck, a file existence check, or a test run.
+
+- [ ] [Criterion 1 — specific and checkable, e.g., "`refundReason` column exists on `transactions` table"]
+- [ ] [Criterion 2 — e.g., "POST /api/payments/refund accepts `reason` field and validates with Zod"]
+- [ ] [Criterion 3 — e.g., "Admin transaction detail page renders `RefundReasonBadge` component"]
+- [ ] [Criterion 4 — e.g., "Types exported from `@hellyeah/shared`"]
+
+## Tasks
+
+### task-1: <Short description>
+**Files:** [list of files to read and modify]
+**Do:** [What to implement — specific enough that a fresh agent with no prior context can do it]
+**Verify:** [How to check this task is done — e.g., "pnpm typecheck passes", "column exists in schema"]
+
+### task-2: <Short description>
+**Files:** [list of files]
+**Do:** [What to implement]
+**Verify:** [How to check]
+**Depends on:** task-1
+
+### task-3: <Short description>
+**Files:** [list of files]
+**Do:** [What to implement]
+**Verify:** [How to check]
+**Depends on:** task-1, task-2
+```
+
+**Rules for plans:**
+
+1. **2-4 tasks.** If you need more, the feature should be split. Each task must fit in a fresh agent context.
+
+2. **File targets are explicit.** Every task lists exactly which files to read and modify. A fresh agent with no prior context should know exactly where to look.
+
+3. **Verification is concrete.** Not "verify it works" — rather "run `pnpm typecheck` and confirm no errors" or "grep for `refundReason` in `schema.ts`".
+
+4. **Dependencies are explicit.** If task-3 needs types from task-1, say so. Tasks without dependencies can run in parallel.
+
+5. **No scope reduction.** Every locked decision from DECISIONS.md must be covered by at least one task. If a decision can't be delivered, STOP and tell the user — don't silently simplify.
+
+6. **Each task produces a commit.** The task description should correspond to a single atomic commit. "Add column and update 3 API endpoints and redesign the UI" is too big.
+
+7. **Reference the docs.** If a task implements something described in the docs (a contract, a data model, an API shape), reference the doc page so the executor can read it.
+
+## Phase 6: Plan Check
+
+Before presenting the plan to the user, self-check:
+
+1. **Coverage check:** Read DECISIONS.md. For each locked decision, confirm at least one task delivers it. If any decision is uncovered, add a task or flag the gap.
+
+2. **Scope reduction check:** Re-read your plan. Are you delivering exactly what was decided, or a simplified version? Look for red flags:
+   - "Simplified version" / "basic implementation" / "v1" / "placeholder"
+   - Missing a decision from the locked list
+   - A task that says "will be wired later" or "can be added in a follow-up"
+   If any of these appear, revise the plan or split into phases.
+
+3. **Size check:** Each task should touch 1-5 files. If a task lists more than 5 files, split it.
+
+4. **Fresh agent test:** For each task, ask: "Could a fresh agent with no conversation history execute this task from the description alone?" If not, add more detail to the task description.
+
+## Phase 7: Present the Plan
+
+Show the user:
+
+1. The success criteria (what will be TRUE when done)
+2. The task breakdown (what each task does, in what order)
+3. Total number of tasks and estimated commits
+
+Ask:
+> Plan ready. Review the success criteria and tasks above. Confirm to proceed, or let me know what to adjust.
+
+**Small task detection:** If the plan has only 1 task touching 3 or fewer files, offer:
+> This is a small change. Want me to just do it now? (Skips /go, executes inline.)
+
+If the user confirms inline execution, execute the single task directly — make the changes, run the verification step, and commit. No need for `/go`.
+
+---
+
+## What This Skill Does NOT Do
+
+- **Does not write code.** That's `/go`.
+- **Does not create PRs.** That's `/pr`.
+- **Does not update docs.** That's `/docs`.
+- **Does not run without user confirmation.** The plan is always presented for approval.
+- **Does not invent architecture.** It reads docs and code to understand what exists, then plans within those boundaries.
