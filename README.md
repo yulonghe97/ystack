@@ -18,6 +18,14 @@ Your documentation should describe what your system IS — not what's planned, n
                     (ystack.config.json)
 ```
 
+**Three principles** drive the design (see [PHILOSOPHY.md](./PHILOSOPHY.md) for the full rationale):
+
+1. **Documentation is the operating system.** A doc page is simultaneously the spec an AI reads, the reference your team reads, and the contract between modules. You write it once — it serves all three purposes.
+
+2. **References, not dumps.** Agents get a pointer ("read `shared/payments.mdx`"), not a 500-line paste. Doc pages are highly cross-referenced so agents navigate the graph incrementally, the same way humans do.
+
+3. **Final state only.** Docs describe what's built and working. Beads tracks what's planned and in progress. The boundary is clean — no "coming soon" in docs, no specs in Beads.
+
 ## Commands
 
 ### Starting a project
@@ -63,7 +71,7 @@ The bridge between code, docs, and Beads. Each module maps to a doc page, code p
 }
 ```
 
-When a feature bead closes → ystack knows which doc page to update.
+When a feature bead closes, ystack knows which doc page to update. When `/build` starts planning, it knows which doc page to read. The registry is the index — docs, code, and Beads are the content.
 
 ## Prerequisites
 
@@ -71,9 +79,14 @@ When a feature bead closes → ystack knows which doc page to update.
 - [Claude Code](https://claude.ai/code) with skills support
 - A project with documentation (Nextra/MDX preferred, any markdown works)
 
+## Docs
+
+- [PHILOSOPHY.md](./PHILOSOPHY.md) — Design principles and rationale
+- [PLAN.md](./PLAN.md) — Full roadmap and command specs
+
 ## Status
 
-Planning phase. See [PLAN.md](./PLAN.md) for the full roadmap.
+Planning phase.
 
 ## License
 
