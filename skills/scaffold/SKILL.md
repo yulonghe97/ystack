@@ -3,7 +3,7 @@ name: scaffold
 description: >
   Scaffold documentation structure from a plan. Two modes: (1) full-project — takes a
   markdown plan describing all modules and their relationships, produces doc stubs, module
-  registry, Mermaid architecture diagrams, and Beads epics. (2) single-module — adds one
+  registry, Mermaid architecture diagrams, and progress files. (2) single-module — adds one
   new module to an existing project. Use this skill when the user says 'scaffold',
   '/scaffold', 'scaffold docs', 'scaffold project', 'set up the docs', 'add a module',
   'new module', 'scaffold module', 'turn this plan into docs', 'bootstrap project',
@@ -23,7 +23,7 @@ Two modes:
 
 ## Mode Detection
 
-1. If `ystack.config.json` exists AND the user provides a module name or a module-level plan (not a full project plan):
+1. If `.ystack/config.json` exists AND the user provides a module name or a module-level plan (not a full project plan):
    → **Single-module mode** (jump to [Single-Module Flow](#single-module-flow))
 
 2. Otherwise:
@@ -175,7 +175,7 @@ Create the documentation structure. Each module gets an overview page with stubs
 
 ### Docs directory structure
 
-Read `ystack.config.json` `docs.framework` to determine the structure. If no config exists, detect from the project.
+Read `.ystack/config.json` `docs.framework` to determine the structure. If no config exists, detect from the project.
 
 **Nextra:**
 ```
@@ -321,7 +321,7 @@ Sub-module pages are NOT created yet — just the overview with a stub table. Pa
 
 ## Phase 4: Generate Module Registry
 
-Create `ystack.config.json`:
+Create `.ystack/config.json`:
 
 ```json
 {
@@ -333,59 +333,69 @@ Create `ystack.config.json`:
   "modules": {
     "<module-a-slug>": {
       "doc": "<module-a-slug>",
-      "scope": ["<apps-or-packages>/<module-a-slug>/**"],
-      "status": "planned"
+      "scope": ["<apps-or-packages>/<module-a-slug>/**"]
     },
     "<module-b-slug>": {
       "doc": "<module-b-slug>",
-      "scope": ["<apps-or-packages>/<module-b-slug>/**"],
-      "status": "planned"
+      "scope": ["<apps-or-packages>/<module-b-slug>/**"]
     }
   }
 }
 ```
 
 Notes:
-- `status` starts as `"planned"` — changes to `"active"` when first feature is built
 - `scope` uses glob patterns — a module can span multiple packages or be a subdirectory within one
-- Sub-modules are tracked by docs (sub-pages). Features are tracked by Beads (child beads). The registry only tracks modules.
-- `epic` field is added in Phase 5 after Beads creates the epics (omitted if Beads not available)
+- Sub-modules are tracked by docs (sub-pages). Features are tracked in progress files (`.ystack/progress/<module>.md`). The registry only tracks modules.
 - The `doc` path is relative to `docs.root`
 
-## Phase 5: Create Beads Epics
+## Phase 5: Create Progress Files
 
-If Beads (`bd`) is available:
+Create a progress file per module in `.ystack/progress/`:
 
-1. Create an epic per module:
-   ```bash
-   bd create "<Module Name>" -t epic --metadata '{"doc": "<module-slug>", "ystack": true}'
-   ```
+For each module, write `.ystack/progress/<module-slug>.md`:
 
-2. Create feature beads as children:
-   ```bash
-   bd create "<Feature description>" -t feature --parent <epic-id>
-   ```
+```markdown
+# <Module Name>
 
-3. Add inter-module dependencies where features cross boundaries:
-   ```bash
-   bd dep add <feature-id> blocks:<dependent-feature-id>
-   ```
+## Features
+- [ ] <Feature 1>           → <module-slug>#<feature-anchor>
+- [ ] <Feature 2>           → <module-slug>#<feature-anchor>
+- [ ] <Feature 3>           → <module-slug>#<feature-anchor>
+      depends-on: <Feature 1>
 
-4. Update `ystack.config.json` with the epic IDs:
-   ```json
-   {
-     "modules": {
-       "auth": {
-         "epic": "bd-a1b2",
-         ...
-       }
-     }
-   }
-   ```
+## Decisions
+| Date | Feature | Decision |
+|------|---------|----------|
 
-If Beads is not available, skip this phase and note:
-> Beads not detected. Module registry created without epic tracking.
-> Run `bd init` and re-run `/scaffold` to add Beads integration.
+## Notes
+```
+
+For inter-module dependencies, use `depends-on:` annotations on the checklist items.
+
+Create `.ystack/progress/_overview.md`:
+
+```markdown
+# Project Progress
+
+## Module Status
+
+| Module | Done | Total | Status |
+|--------|------|-------|--------|
+| auth | 0 | 3 | not started |
+| payments | 0 | 2 | not started |
+| dashboard | 0 | 4 | not started |
+
+## Dependencies
+
+auth/sessions → auth/oauth
+payments/stripe → payments/wallet → dashboard/usage
+
+## Ready Front
+
+- auth/email-login (no dependencies)
+- auth/sessions (no dependencies)
+- payments/stripe (no dependencies)
+```
 
 ## Phase 6: Present the Result
 
@@ -406,14 +416,14 @@ Show the user what was generated:
   └── api/index.mdx (3 feature stubs)
 
 ### Module Registry
-  ystack.config.json — 6 modules registered
+  .ystack/config.json — 6 modules registered
 
-### Beads
-  6 epics, 15 feature beads created
+### Progress
+  6 progress files created, 15 features tracked
   Ready front: auth/email-login, db/schema-setup (no blockers)
 
 ### Next Steps
-  1. Pick a module to start with — run `bd ready` to see what's unblocked
+  1. Pick a module to start with — check `.ystack/progress/_overview.md` for the ready front
   2. `/build <feature>` to plan the first feature
   3. Doc pages will fill in as features are built via `/docs`
 ```
@@ -422,9 +432,9 @@ Show the user what was generated:
 
 ## Single-Module Flow
 
-Use this flow when adding a new module to an existing project that already has `ystack.config.json` and a docs site.
+Use this flow when adding a new module to an existing project that already has `.ystack/config.json` and a docs site.
 
-**Trigger:** `/scaffold <module-name>` or `/scaffold` with a module-level plan (not a full project plan) in a project with an existing `ystack.config.json`.
+**Trigger:** `/scaffold <module-name>` or `/scaffold` with a module-level plan (not a full project plan) in a project with an existing `.ystack/config.json`.
 
 ### Step 1: Get the Module Plan
 
@@ -447,9 +457,9 @@ Extract from the module plan:
 - **Name** and **slug** (e.g., "Notifications" → `notifications`)
 - **Type** — `app` or `package`
 - **Features** — bullet points
-- **Connections** — which existing modules it connects to (verify these exist in `ystack.config.json`)
+- **Connections** — which existing modules it connects to (verify these exist in `.ystack/config.json`)
 
-Read the existing `ystack.config.json` to understand what modules already exist.
+Read the existing `.ystack/config.json` to understand what modules already exist.
 
 Present:
 ```
@@ -483,7 +493,7 @@ Proceed?
 
 ### Step 4: Update Module Registry
 
-Read and update `ystack.config.json`:
+Read and update `.ystack/config.json`:
 
 ```json
 {
@@ -491,30 +501,32 @@ Read and update `ystack.config.json`:
     // ... existing modules ...
     "<module-slug>": {
       "doc": "<module-slug>",
-      "scope": ["<apps-or-packages>/<module-slug>/**"],
-      "status": "planned"
+      "scope": ["<apps-or-packages>/<module-slug>/**"]
     }
   }
 }
 ```
 
-### Step 5: Create Beads Epic
+### Step 5: Create Progress File
 
-If Beads (`bd`) is available:
+Write `.ystack/progress/<module-slug>.md`:
 
-1. Create the module epic:
-   ```bash
-   bd create "<Module Name>" -t epic --metadata '{"doc": "<module-slug>", "ystack": true}'
-   ```
+```markdown
+# <Module Name>
 
-2. Create feature beads as children:
-   ```bash
-   bd create "<Feature description>" -t feature --parent <epic-id>
-   ```
+## Features
+- [ ] <Feature 1>           → <module-slug>#<feature-anchor>
+- [ ] <Feature 2>           → <module-slug>#<feature-anchor>
 
-3. Add dependencies to existing module beads where connections exist.
+## Decisions
+| Date | Feature | Decision |
+|------|---------|----------|
 
-4. Update `ystack.config.json` with the epic ID.
+## Notes
+```
+
+Add dependencies to existing module features where connections exist.
+Update `.ystack/progress/_overview.md` to include the new module.
 
 ### Step 6: Present Summary
 
@@ -525,10 +537,10 @@ If Beads (`bd`) is available:
   <docs-root>/<module-slug>/index.mdx — overview with 3 feature stubs
 
 ### Registry
-  ystack.config.json — module added (status: planned)
+  .ystack/config.json — module added
 
-### Beads
-  1 epic, 3 feature beads created
+### Progress
+  progress file created, 3 features tracked
 
 ### Architecture Diagram
   Updated — <module-slug> connected to auth, payments

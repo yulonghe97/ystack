@@ -185,7 +185,7 @@ For items marked WON'T FIX or FALSE POSITIVE, draft reply comments:
 ### Suggested Replies
 
 **Comment #5** (@sarah — refundRequestedAt timestamp):
-> Good idea — we've deferred this to a follow-up. Tracked in [bead/issue reference].
+> Good idea — we've deferred this to a follow-up. Tracked in [progress file / issue reference].
 
 **Comment #6** (CI: e2e-tests):
 > Flaky test unrelated to this PR — `auth/login.spec.ts` timed out. Re-running CI.

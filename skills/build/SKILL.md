@@ -19,9 +19,9 @@ You are the planning phase of the ystack agent harness. Your job is to understan
 
 Identify which module(s) this feature belongs to.
 
-1. Read `ystack.config.json` if it exists. Match the feature to a module by checking `scope` globs:
+1. Read `.ystack/config.json` if it exists. Match the feature to a module by checking `scope` globs:
    ```bash
-   cat ystack.config.json
+   cat .ystack/config.json
    ```
 
 2. If no config exists or no match found, scan the docs directory structure:
@@ -117,7 +117,7 @@ Create the directory and file:
 .context/<feature-id>/DECISIONS.md
 ```
 
-Use a short, descriptive ID for the feature (e.g., `refund-reason`, `oauth-support`, `dashboard-charts`). If Beads is available (`bd` CLI), use the bead ID instead.
+Use a short, descriptive ID for the feature (e.g., `refund-reason`, `oauth-support`, `dashboard-charts`).
 
 **DECISIONS.md format:**
 

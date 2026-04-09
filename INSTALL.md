@@ -41,7 +41,9 @@ my-app/
 │   ├── next.config.ts
 │   ├── package.json
 │   └── tsconfig.json
-├── .beads/                      # Beads database (bd init)
+├── .ystack/                     # ystack config and progress tracking
+│   ├── config.json             # Module registry
+│   ├── progress/               # Progress files per module
 ├── .claude/
 │   ├── skills/                  # ystack skills installed
 │   │   ├── build/SKILL.md
@@ -57,7 +59,6 @@ my-app/
 ├── pnpm-workspace.yaml          # pnpm workspace definition
 ├── package.json                 # Root package with shared scripts
 ├── tsconfig.json                # Root TypeScript config
-├── ystack.config.json           # Module registry (empty, populated by /scaffold)
 ├── CLAUDE.md                    # AI context for Claude Code
 ├── AGENTS.md                    # AI context for other agents
 ├── .gitignore
@@ -73,7 +74,6 @@ my-app/
 | **Ultracite** | Latest | Code linting and formatting (Biome under the hood) |
 | **Nextra 4** or **Fumadocs** | Latest | Documentation site — App Router, MDX, renders docs as browsable site. Nextra is the default; use `--docs fumadocs` for Fumadocs. |
 | **TypeScript** | 5.8+ | Strict mode, project references |
-| **Beads** | Latest | Persistent memory — task graph, session state, cross-session continuity |
 
 ### Root `package.json` Scripts
 
@@ -112,9 +112,9 @@ When you provide a plan file, `npx ystack create` also runs the `/scaffold` logi
 2. Creates a package directory per module under `apps/` or `packages/`
 3. Scaffolds doc pages per module (`docs/src/content/<module>/`)
 4. Generates system architecture diagram (Mermaid)
-5. Creates `ystack.config.json` with module registry entries
-6. Creates epic beads per module with feature children
-7. Sets up inter-module dependencies in Beads
+5. Creates `.ystack/config.json` with module registry entries
+6. Creates progress files per module with feature checklists
+7. Sets up inter-module dependencies via `depends-on:` annotations
 
 **Example plan.md input:**
 
@@ -166,7 +166,9 @@ my-app/
 │   └── dashboard/
 │       ├── _meta.ts
 │       └── index.mdx            # Dashboard overview with feature stubs
-└── ystack.config.json           # Populated module registry
+├── .ystack/
+│   ├── config.json              # Populated module registry
+│   └── progress/                # Progress files per module
 ```
 
 ---
@@ -202,7 +204,7 @@ npx ystack init --skills-only
    - Codex → appends to `AGENTS.md` (planned — not yet implemented)
    - etc. (see [RUNTIMES.md](./RUNTIMES.md) — multi-runtime support is planned)
 
-3. **Create `ystack.config.json`** with detected settings:
+3. **Create `.ystack/config.json`** with detected settings:
    ```json
    {
      "docs": {
@@ -217,10 +219,7 @@ npx ystack init --skills-only
    }
    ```
 
-4. **Initialize Beads** if not already present:
-   ```bash
-   bd init
-   ```
+4. **Create `.ystack/progress/`** directory with `_overview.md` template
 
 5. **Add to `.gitignore`:**
    ```
@@ -233,7 +232,7 @@ npx ystack init --skills-only
 
    Next:
    → Run /import to scan your codebase and populate the module registry
-   → Or manually add modules to ystack.config.json
+   → Or manually add modules to .ystack/config.json
 
    Detected: Turborepo monorepo, Nextra docs, Ultracite linter, Claude Code
    Skills installed: .claude/skills/build, go, review, docs, pr
@@ -257,7 +256,7 @@ npx ystack update
 # What happens:
 # 1. Pulls latest core prompts
 # 2. Re-applies adapters for detected runtimes
-# 3. Preserves project customizations in ystack.config.json
+# 3. Preserves project customizations in .ystack/config.json
 # 4. Merges hook changes (doesn't overwrite custom hooks)
 # 5. Shows changelog of what changed
 ```
@@ -268,7 +267,7 @@ When you customize a skill (edit a SKILL.md), ystack tracks this. On update:
 
 - **Unmodified skills** — replaced with latest version
 - **Modified skills** — flagged, not overwritten. Shows diff so you can merge manually
-- **Custom rules** in `ystack.config.json` — always preserved
+- **Custom rules** in `.ystack/config.json` — always preserved
 - **Custom hooks** — always preserved
 
 ---
@@ -298,12 +297,11 @@ npx ystack remove
 # 1. Removes .claude/skills/ystack-* (only ystack skills)
 # 2. Removes ystack hooks from .claude/settings.json
 # 3. Removes .cursor/rules/ystack-* (if present)
-# 4. Keeps ystack.config.json (your module registry)
-# 5. Keeps .beads/ (your Beads data)
-# 6. Keeps docs/ (your documentation)
+# 4. Keeps .ystack/ (your config and progress files)
+# 5. Keeps docs/ (your documentation)
 ```
 
-Skills and hooks are removed. Your data (registry, beads, docs) is never touched.
+Skills and hooks are removed. Your data (.ystack/, docs) is never touched.
 
 ---
 
@@ -315,7 +313,6 @@ Skills and hooks are removed. Your data (registry, beads, docs) is never touched
 |------|---------------|-----|
 | **Node.js** 20+ | [nodejs.org](https://nodejs.org) | Runs the installer and Nextra |
 | **pnpm** | `npm install -g pnpm` | Workspace package management |
-| **Beads** (`bd`) | `brew install beads` or `npm install -g @beads/bd` | Persistent memory layer |
 
 ### Included in `create` (not required for `init`)
 

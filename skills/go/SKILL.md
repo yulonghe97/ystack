@@ -2,7 +2,7 @@
 name: go
 description: >
   Execute a plan created by /build. Runs each task with a fresh subagent, produces
-  atomic commits, and updates structured notes. Use this skill when the user says
+  atomic commits, and updates progress files. Use this skill when the user says
   'go', '/go', 'execute', 'run the plan', 'execute the plan', 'start building',
   'let's do it', or confirms a plan and wants to proceed with implementation.
   Requires a PLAN.md from a prior /build run.
@@ -111,18 +111,20 @@ Where:
 - `scope` = the package or module affected (e.g., `db`, `api`, `admin`, `shared`)
 - `description` = what changed, in imperative mood
 
-Stage only the files this task modified. Do not stage unrelated changes.
+Stage the code files AND the progress file together, then commit as one atomic operation:
 
-**Step 5: Update notes**
-
-If Beads is available (`bd` CLI), update the bead's structured notes:
 ```bash
-bd update <bead-id> --notes "COMPLETED: <what was done>
-KEY DECISIONS: <any implementation decisions made>"
-bd close <bead-id> --reason "<summary>"
+git add <code-files> .ystack/progress/<module>.md
+git commit -m "<type>(<scope>): <description>"
 ```
 
-If Beads is not available, append to a `SUMMARY.md` in the feature's `.context/` directory.
+**Step 5: Update progress (before committing)**
+
+Before running `git commit` in Step 4, update the module's progress file at `.ystack/progress/<module>.md`:
+- Check the box for the completed feature: `- [ ]` → `- [x]`
+- Add a row to the Decisions table if any implementation decisions were made
+
+The progress update and code change are staged and committed together — one commit includes both.
 
 ### Subagent execution (Tier 1 runtimes)
 

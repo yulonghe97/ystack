@@ -58,10 +58,10 @@ ystack/
 ### Core (agent-agnostic)
 
 The prompts in `core/prompts/` are the actual skill logic. They reference:
-- `ystack.config.json` for the module registry
-- `bd` CLI for Beads operations
+- `.ystack/config.json` for the module registry
+- `.ystack/progress/` for development state
 - Doc page paths (resolved from the registry)
-- `.context/<bead-id>/` for temporary state
+- `.context/<feature-slug>/` for temporary state
 
 These are pure markdown instructions that any LLM can follow. They don't use Claude-specific features, tool names, or XML tags.
 
@@ -105,7 +105,7 @@ Not all runtimes can do everything. ystack degrades gracefully:
 | **Runtimes** | Claude Code, Gemini CLI | Codex, Cursor | Copilot, Windsurf |
 | **Subagents** | Yes — fresh context per task | No — inline execution | No |
 | **Hooks** | Yes — pre/post tool use | No — rules embedded in prompts | No |
-| **Beads** | Full (`bd` CLI) | Full (`bd` CLI) | Full (`bd` CLI) |
+| **Progress files** | Git-native markdown | Git-native markdown | Git-native markdown |
 | **Docs reading** | Selective (agent navigates) | Selective | Selective |
 | **Plan-checker** | Separate agent validates | Self-check in same context | Self-check |
 | **Parallel execution** | Yes (wave-based) | Sequential | Sequential |
@@ -121,7 +121,7 @@ Claude Code and Gemini CLI support subagents and hooks. They get the full experi
 
 ### Tier 2: Inline Execution
 
-Codex and Cursor can run `bd` commands and read files, but have no subagent support. The harness adapts:
+Codex and Cursor can read files, but have no subagent support. The harness adapts:
 - `/go` executes tasks sequentially in the same context
 - Plan-checker runs as a self-review step (not a separate agent)
 - Lint rules are embedded in the prompt ("before editing, verify you've read the spec")
@@ -134,22 +134,22 @@ This is still valuable. The workflow (build → go → review → docs → pr) w
 Copilot and Windsurf have minimal configuration. They get the workflow as natural language instructions:
 - No slash commands — the instructions describe the process to follow
 - The agent is told: "When asked to build a feature, first read the module's doc page..."
-- Beads still works (any agent with shell access can use `bd`)
+- Progress files are just markdown — any agent can read and write them
 - Verification is self-check only
 
-Even at this tier, having Beads + docs + module registry is a significant upgrade over nothing.
+Even at this tier, having progress files + docs + module registry is a significant upgrade over nothing.
 
 ## What Stays Universal
 
 Regardless of runtime, every agent gets:
 
-1. **Beads** — any agent with shell access can run `bd ready`, `bd create`, `bd close`. The persistent memory layer works everywhere.
+1. **Progress files** — any agent can read and write markdown. The progress tracking layer (`.ystack/progress/`) is just files in git.
 
 2. **Docs** — every agent can read markdown files. The documentation-as-spec pattern is runtime-agnostic.
 
-3. **Module registry** — `ystack.config.json` is JSON. Any agent can parse it to find the right doc page and code scope.
+3. **Module registry** — `.ystack/config.json` is JSON. Any agent can parse it to find the right doc page and code scope.
 
-4. **`.context/<bead-id>/`** — PLAN.md and DECISIONS.md are markdown files. Any agent can read and write them.
+4. **`.context/<feature-slug>/`** — PLAN.md and DECISIONS.md are markdown files. Any agent can read and write them.
 
 5. **The workflow** — build → go → review → docs → pr is a process, not a tool feature. It works in any agent that can follow multi-step instructions.
 

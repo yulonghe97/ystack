@@ -160,6 +160,51 @@ function installHooks(projectRoot, ystackRoot) {
 		});
 	}
 
+	// PreToolUse — progress-before-ship (on Bash for git push / gh pr create)
+	const hasProgressBeforeShip = settings.hooks.PreToolUse.some(
+		(h) => h.hooks?.some((hh) => hh.command?.includes("progress-before-ship")),
+	);
+	if (!hasProgressBeforeShip) {
+		settings.hooks.PreToolUse.push({
+			matcher: "Bash",
+			hooks: [{
+				type: "command",
+				command: `node "${join(projectRoot, ".claude", "hooks", "progress-before-ship.js")}"`,
+				timeout: 5,
+			}],
+		});
+	}
+
+	// PreToolUse — no-undocumented-check (on Edit of progress files)
+	const hasNoUndocumentedCheck = settings.hooks.PreToolUse.some(
+		(h) => h.hooks?.some((hh) => hh.command?.includes("no-undocumented-check")),
+	);
+	if (!hasNoUndocumentedCheck) {
+		settings.hooks.PreToolUse.push({
+			matcher: "Edit",
+			hooks: [{
+				type: "command",
+				command: `node "${join(projectRoot, ".claude", "hooks", "no-undocumented-check.js")}"`,
+				timeout: 5,
+			}],
+		});
+	}
+
+	// PostToolUse — docs-match-progress (after editing doc files)
+	const hasDocsMatchProgress = settings.hooks.PostToolUse.some(
+		(h) => h.hooks?.some((hh) => hh.command?.includes("docs-match-progress")),
+	);
+	if (!hasDocsMatchProgress) {
+		settings.hooks.PostToolUse.push({
+			matcher: "Edit|Write",
+			hooks: [{
+				type: "command",
+				command: `node "${join(projectRoot, ".claude", "hooks", "docs-match-progress.js")}"`,
+				timeout: 5,
+			}],
+		});
+	}
+
 	mkdirSync(dirname(settingsPath), { recursive: true });
 	writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
 
@@ -197,19 +242,26 @@ function removeHooks(projectRoot) {
 		const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
 		if (settings.hooks?.PostToolUse) {
 			settings.hooks.PostToolUse = settings.hooks.PostToolUse.filter(
-				(h) => !h.hooks?.some((hh) => hh.command?.includes("context-monitor")),
+				(h) => !h.hooks?.some((hh) =>
+					hh.command?.includes("context-monitor") ||
+					hh.command?.includes("docs-match-progress")
+				),
 			);
 		}
 		if (settings.hooks?.PreToolUse) {
 			settings.hooks.PreToolUse = settings.hooks.PreToolUse.filter(
-				(h) => !h.hooks?.some((hh) => hh.command?.includes("workflow-nudge")),
+				(h) => !h.hooks?.some((hh) =>
+					hh.command?.includes("workflow-nudge") ||
+					hh.command?.includes("progress-before-ship") ||
+					hh.command?.includes("no-undocumented-check")
+				),
 			);
 		}
 		writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
 	} catch { /* ignore */ }
 
 	const hooksDir = join(projectRoot, ".claude", "hooks");
-	for (const file of ["context-monitor.js", "session-start.sh", "workflow-nudge.js"]) {
+	for (const file of ["context-monitor.js", "session-start.sh", "workflow-nudge.js", "progress-before-ship.js", "docs-match-progress.js", "no-undocumented-check.js"]) {
 		const target = join(hooksDir, file);
 		if (existsSync(target)) rmSync(target);
 	}
@@ -284,42 +336,7 @@ async function cmdInit() {
 		}
 	}
 
-	// --- Step 3: Beads ---
-	let initBeads = false;
-	if (!skillsOnly) {
-		const hasBeads = existsSync(join(projectRoot, ".beads"));
-		const hasBdCli = commandExists("bd");
-
-		if (hasBeads) {
-			p.log.info("Beads already initialized");
-		} else if (hasBdCli) {
-			initBeads = handleCancel(await p.confirm({
-				message: "Initialize Beads for persistent memory?",
-			}));
-		} else {
-			const installBeads = handleCancel(await p.select({
-				message: "Beads (persistent memory for agents):",
-				options: [
-					{ label: "Install Beads (brew install beads)", value: "install" },
-					{ label: "Skip — I'll set up Beads later", value: "skip" },
-				],
-			}));
-
-			if (installBeads === "install") {
-				p.log.step("Installing Beads...");
-				try {
-					execSync("brew install beads", { stdio: "inherit" });
-					p.log.success("Beads installed");
-					initBeads = true;
-				} catch {
-					p.log.warn("Install failed. Try manually: brew install beads");
-					p.log.warn("or: npm install -g @beads/bd");
-				}
-			}
-		}
-	}
-
-	// --- Step 4: Runtime ---
+	// --- Step 3: Runtime ---
 	const runtime = handleCancel(await p.select({
 		message: "Runtime:",
 		options: [
@@ -328,7 +345,7 @@ async function cmdInit() {
 		],
 	}));
 
-	// --- Step 5: Hooks ---
+	// --- Step 4: Hooks ---
 	let installHooksFlag = true;
 	if (!skillsOnly && runtime === "claude-code") {
 		installHooksFlag = handleCancel(await p.confirm({
@@ -352,7 +369,9 @@ async function cmdInit() {
 	}
 
 	// Config
-	const configPath = join(projectRoot, "ystack.config.json");
+	const ystackDir = join(projectRoot, ".ystack");
+	mkdirSync(ystackDir, { recursive: true });
+	const configPath = join(ystackDir, "config.json");
 	const configExisted = existsSync(configPath);
 	if (!configExisted) {
 		const monorepo = detectMonorepo();
@@ -376,14 +395,14 @@ async function cmdInit() {
 		writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
 	}
 
-	ensureGitignore(projectRoot);
-
-	// Beads
-	if (initBeads) {
-		try {
-			execSync("bd init", { stdio: "pipe", cwd: projectRoot });
-		} catch { /* handled below */ }
+	// Progress directory
+	const progressDir = join(ystackDir, "progress");
+	mkdirSync(progressDir, { recursive: true });
+	if (!existsSync(join(progressDir, "_overview.md"))) {
+		writeFileSync(join(progressDir, "_overview.md"), `# Project Progress\n\n## Module Status\n\n| Module | Done | Total | Status |\n|--------|------|-------|--------|\n\n## Ready Front\n\n_No modules registered yet. Run \`/import\` or \`/scaffold\` to get started._\n`);
 	}
+
+	ensureGitignore(projectRoot);
 
 	s.stop("Setup complete");
 
@@ -393,13 +412,11 @@ async function cmdInit() {
 		p.log.success("Hooks: context-monitor, workflow-nudge");
 	}
 	if (configExisted) {
-		p.log.info("Config: ystack.config.json preserved");
+		p.log.info("Config: .ystack/config.json preserved");
 	} else {
-		p.log.success("Config: created ystack.config.json");
+		p.log.success("Config: created .ystack/config.json");
 	}
-	if (initBeads) {
-		p.log.success("Beads initialized");
-	}
+	p.log.success("Progress: .ystack/progress/ ready");
 
 	p.note(
 		[
@@ -443,7 +460,7 @@ async function cmdRemove() {
 	p.intro("ystack remove");
 
 	const proceed = handleCancel(await p.confirm({
-		message: "Remove ystack skills and hooks? (keeps config, beads, docs)",
+		message: "Remove ystack skills and hooks? (keeps .ystack/, docs)",
 	}));
 	if (!proceed) {
 		p.outro("Cancelled.");
@@ -456,7 +473,7 @@ async function cmdRemove() {
 	removeHooks(projectRoot);
 	s.stop("Removed skills and hooks");
 
-	p.log.info("Kept: ystack.config.json, .beads/, docs/");
+	p.log.info("Kept: .ystack/, docs/");
 	p.outro("Done!");
 }
 
@@ -504,11 +521,12 @@ async function cmdCreate() {
 		"docs/src/content",
 		".claude/skills",
 		".context",
+		".ystack/progress",
 	];
 	for (const dir of dirs) {
 		mkdirSync(join(projectDir, dir), { recursive: true });
 	}
-	console.log(green("  ✓ apps/, packages/, docs/, .claude/, .context/\n"));
+	console.log(green("  ✓ apps/, packages/, docs/, .claude/, .context/, .ystack/\n"));
 
 	// --- Generate files ---
 	console.log(bold("Generating config files..."));
@@ -589,7 +607,7 @@ async function cmdCreate() {
 	writeFileSync(join(projectDir, "biome.json"), JSON.stringify(biomeConfig, null, 2) + "\n");
 	console.log(green("  ✓ biome.json"));
 
-	// ystack.config.json
+	// .ystack/config.json
 	const docsRoot = docsFramework === "fumadocs" ? "content/docs" : "docs/src/content";
 	const ystackConfig = {
 		project: name,
@@ -608,8 +626,12 @@ async function cmdCreate() {
 			auto_docs_check: true,
 		},
 	};
-	writeFileSync(join(projectDir, "ystack.config.json"), JSON.stringify(ystackConfig, null, 2) + "\n");
-	console.log(green("  ✓ ystack.config.json"));
+	writeFileSync(join(projectDir, ".ystack/config.json"), JSON.stringify(ystackConfig, null, 2) + "\n");
+	console.log(green("  ✓ .ystack/config.json"));
+
+	// .ystack/progress/_overview.md
+	writeFileSync(join(projectDir, ".ystack/progress/_overview.md"), `# Project Progress\n\n## Module Status\n\n| Module | Done | Total | Status |\n|--------|------|-------|--------|\n\n## Ready Front\n\n_No modules registered yet. Run \`/import\` or \`/scaffold\` to get started._\n`);
+	console.log(green("  ✓ .ystack/progress/_overview.md"));
 
 	// CLAUDE.md
 	const claudeMd = `# ${name}
@@ -624,7 +646,7 @@ This project uses [ystack](https://github.com/yulonghe97/ystack) for doc-driven 
 
 ## Module Registry
 
-Modules are defined in \`ystack.config.json\`. Each module maps code directories to documentation pages.
+Modules are defined in \`.ystack/config.json\`. Each module maps code directories to documentation pages.
 
 ## Available Commands
 
@@ -662,7 +684,7 @@ This project uses [ystack](https://github.com/yulonghe97/ystack) for doc-driven 
 
 ## Module Registry
 
-Modules are defined in \`ystack.config.json\`. Each module maps code directories to documentation pages.
+Modules are defined in \`.ystack/config.json\`. Each module maps code directories to documentation pages.
 
 ## Workflow
 
@@ -932,7 +954,7 @@ function usage() {
 ${bold("ystack")} — agent harness for doc-driven development
 
 ${bold("Commands:")}
-  ${green("init")}              Interactive setup — configure docs, beads, runtime, hooks
+  ${green("init")}              Interactive setup — configure docs, runtime, hooks
   ${green("init --skills-only")} Install skills only, skip everything else
   ${green("update")}            Update skills and hooks to latest version
   ${green("remove")}            Remove ystack skills and hooks (keeps data)
