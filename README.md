@@ -2,7 +2,7 @@
 
 An agent harness for doc-driven development — built on top of [Beads](https://github.com/gastownhall/beads).
 
-> **Status:** Planning phase
+> **Status:** Early release (v0.1) — Claude Code only. Multi-runtime support is planned.
 
 ## Why
 

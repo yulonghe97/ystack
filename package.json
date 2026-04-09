@@ -12,6 +12,10 @@
     "bin/",
     "README.md",
     "PHILOSOPHY.md",
+    "LINTING.md",
+    "RUNTIMES.md",
+    "PLAN.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "keywords": [

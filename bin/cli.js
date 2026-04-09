@@ -649,6 +649,40 @@ Modules are defined in \`ystack.config.json\`. Each module maps code directories
 	writeFileSync(join(projectDir, "CLAUDE.md"), claudeMd);
 	console.log(green("  ✓ CLAUDE.md"));
 
+	// AGENTS.md — runtime-agnostic context for non-Claude agents
+	const agentsMd = `# ${name}
+
+This project uses [ystack](https://github.com/yulonghe97/ystack) for doc-driven development.
+
+## Structure
+
+- \`apps/\` — Application packages
+- \`packages/\` — Shared library packages
+- \`docs/\` — Documentation site (${docsFramework})
+
+## Module Registry
+
+Modules are defined in \`ystack.config.json\`. Each module maps code directories to documentation pages.
+
+## Workflow
+
+1. Read the relevant doc page before making changes
+2. Plan before executing — break work into small, verifiable tasks
+3. Verify against success criteria after implementation
+4. Update docs when done — only document completed, verified work
+
+## Scripts
+
+- \`pnpm dev\` — Start dev servers
+- \`pnpm build\` — Build all packages
+- \`pnpm typecheck\` — Type-check all packages
+- \`pnpm check\` — Lint (ultracite/biome)
+- \`pnpm fix\` — Auto-fix lint issues
+- \`pnpm clean\` — Clean build artifacts
+`;
+	writeFileSync(join(projectDir, "AGENTS.md"), agentsMd);
+	console.log(green("  ✓ AGENTS.md"));
+
 	// .gitignore
 	const gitignore = `node_modules/
 dist/

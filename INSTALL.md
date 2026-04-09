@@ -1,5 +1,7 @@
 # Installation & Project Setup
 
+> **Note:** v0.1 supports Claude Code only. Multi-runtime support (Cursor, Codex, etc.) is planned for a future version. See [RUNTIMES.md](./RUNTIMES.md).
+
 ## Two Paths
 
 | Path | Command | For |
