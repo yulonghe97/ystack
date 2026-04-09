@@ -1,8 +1,15 @@
 # ystack
 
+[![npm version](https://img.shields.io/npm/v/ystack)](https://www.npmjs.com/package/ystack)
+[![license](https://img.shields.io/npm/l/ystack)](./LICENSE)
+
 An agent harness for doc-driven development — built on top of [Beads](https://github.com/gastownhall/beads).
 
 > **Status:** Early release (v0.1) — Claude Code only. Multi-runtime support is planned.
+
+```bash
+npx ystack create my-app
+```
 
 ## Why
 
@@ -97,6 +104,14 @@ See [INSTALL.md](./INSTALL.md) for full setup options, prerequisites, and config
 - [LINTING.md](./LINTING.md) — Agent linting rules
 - [RUNTIMES.md](./RUNTIMES.md) — Multi-runtime support
 - [PLAN.md](./PLAN.md) — Roadmap and command specs
+
+## Contributing
+
+Issues and PRs welcome. Please open an issue before starting large changes.
+
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for release history.
 
 ## License
 
