@@ -26,10 +26,21 @@ if (existsSync(".context/.quick")) {
 	process.exit(0);
 }
 
-// Get changed files on this branch vs main
+// Resolve the repo's default branch dynamically
+let baseBranch = "main";
+try {
+	const ref = execSync("git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null", {
+		encoding: "utf-8",
+	}).trim();
+	baseBranch = ref.replace("refs/remotes/origin/", "");
+} catch {
+	// Fall back to "main"
+}
+
+// Get changed files on this branch vs the default branch
 let changedFiles;
 try {
-	changedFiles = execSync("git diff main...HEAD --name-only 2>/dev/null", {
+	changedFiles = execSync(`git diff ${baseBranch}...HEAD --name-only 2>/dev/null`, {
 		encoding: "utf-8",
 	}).trim().split("\n").filter(Boolean);
 } catch {

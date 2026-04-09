@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.2 — 2026-04-09
+
+### Fixed
+
+- CLI: use relative paths in `.claude/settings.json` instead of absolute paths that break on other machines
+- CLI: write `package.json` with `"type": "module"` into `.claude/hooks/` so ESM imports work in any consuming repo
+- `progress-before-ship` hook: resolve default branch dynamically via `git symbolic-ref` instead of hardcoding `main`
+- `docs-match-progress` hook: use longest-match when resolving modules to avoid `shared` matching before `shared/payments`
+- `workflow-nudge` hook: scope state file per repo to prevent cross-project leakage
+
+---
+
 ## 0.2.1 — 2026-04-09
 
 ### Fixed
