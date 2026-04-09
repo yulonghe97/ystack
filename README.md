@@ -8,7 +8,14 @@ An agent harness for doc-driven development — built on top of [Beads](https://
 > **Status:** Early release (v0.1) — Claude Code only. Multi-runtime support is planned.
 
 ```bash
+# Interactive setup guide
+npx ystack
+
+# New project with opinionated defaults
 npx ystack create my-app
+
+# Add to an existing project
+cd your-project && npx ystack init
 ```
 
 ## Why
