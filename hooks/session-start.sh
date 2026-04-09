@@ -16,7 +16,7 @@ if [ -d ".ystack/progress" ]; then
     echo ""
     echo "Ready to work on:"
     grep -r '^\- \[ \]' .ystack/progress/*.md 2>/dev/null | head -10 | while read -r line; do
-      FILE=$(echo "$line" | cut -d: -f1 | xargs basename .md)
+      FILE=$(echo "$line" | cut -d: -f1 | xargs basename | sed 's/\.md$//')
       FEATURE=$(echo "$line" | sed 's/.*\- \[ \] //' | sed 's/  *→.*//')
       echo "  $FILE — $FEATURE"
     done

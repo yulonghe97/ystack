@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1 — 2026-04-09
+
+### Fixed
+
+- `no-undocumented-check` hook: double `docs/` prefix when resolving doc paths — progress anchors already include the full path, so prepending `docsRoot` caused lookups to fail silently
+- `session-start` hook: `xargs basename .md` returned `.md` instead of the module name
+
+---
+
 ## 0.2.0 — 2026-04-09
 
 **Breaking:** Replaces Beads with git-native progress files. No migration path from 0.1.0 — run `npx ystack init` to set up the new `.ystack/` directory.

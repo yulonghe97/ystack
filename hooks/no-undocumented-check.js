@@ -36,8 +36,7 @@ try {
 	process.exit(0);
 }
 
-const docsRoot = config.docs?.root;
-if (!docsRoot) {
+if (!config.docs?.root) {
 	process.exit(0);
 }
 
@@ -64,10 +63,10 @@ for (const anchor of anchors) {
 
 	// Try to find the doc file
 	const candidates = [
-		`${docsRoot}/${docPath}/index.mdx`,
-		`${docsRoot}/${docPath}/index.md`,
-		`${docsRoot}/${docPath}.mdx`,
-		`${docsRoot}/${docPath}.md`,
+		`${docPath}/index.mdx`,
+		`${docPath}/index.md`,
+		`${docPath}.mdx`,
+		`${docPath}.md`,
 	];
 
 	for (const candidate of candidates) {
