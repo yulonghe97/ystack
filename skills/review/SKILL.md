@@ -64,7 +64,7 @@ For each success criterion in PLAN.md, verify it against the actual codebase. Do
 | 1 | `refundReason` column exists on `transactions` table | PASS | `packages/db/src/schema.ts:47` — `refundReason: pgEnum(...)` |
 | 2 | POST /api/payments/refund accepts `reason` field | PASS | `apps/api/src/routes/payments.ts:92` — `reason: z.enum([...])` |
 | 3 | Admin transaction detail shows refund reason badge | FAIL | Component exists at `apps/admin/src/components/RefundReasonBadge.tsx` but not imported in `page.tsx` |
-| 4 | Types exported from `@hellyeah/shared` | PASS | `packages/shared/src/types/payments.ts:23` — `export type RefundReason` |
+| 4 | Types exported from `@acme/shared` | PASS | `packages/shared/src/types/payments.ts:23` — `export type RefundReason` |
 ```
 
 **Include file path and line number as evidence.** "PASS" without evidence is not acceptable.

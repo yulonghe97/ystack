@@ -165,7 +165,7 @@ What must be TRUE in the codebase when this feature is done. Each criterion is i
 - [ ] [Criterion 1 — specific and checkable, e.g., "`refundReason` column exists on `transactions` table"]
 - [ ] [Criterion 2 — e.g., "POST /api/payments/refund accepts `reason` field and validates with Zod"]
 - [ ] [Criterion 3 — e.g., "Admin transaction detail page renders `RefundReasonBadge` component"]
-- [ ] [Criterion 4 — e.g., "Types exported from `@hellyeah/shared`"]
+- [ ] [Criterion 4 — e.g., "Types exported from `@acme/shared`"]
 
 ## Tasks
 

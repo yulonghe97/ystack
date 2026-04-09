@@ -90,10 +90,10 @@ The bridge between code, docs, and Beads. Lives in `ystack.config.json`:
       "epic": "bd-a1b2",
       "status": "active"
     },
-    "aima": {
-      "doc": "aima",
+    "notifications": {
+      "doc": "notifications",
       "scope": [
-        "packages/aima/**",
+        "packages/notifications/**",
         "apps/api/src/messaging-gateway/**"
       ],
       "epic": "bd-c3d4",

@@ -21,7 +21,7 @@ Output a coverage table:
 | refundReason enum column on transactions | task-1 | COVERED |
 | API accepts reason field | task-2 | COVERED |
 | Admin shows badge | task-3 | COVERED |
-| Types in @hellyeah/shared | task-1 | COVERED |
+| Types in @acme/shared | task-1 | COVERED |
 
 If any decision shows **NOT COVERED**, the plan fails.
 

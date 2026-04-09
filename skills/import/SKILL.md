@@ -109,7 +109,7 @@ Group the scan results into logical modules.
    - Shared types that are consumed by multiple packages → the types belong to whichever module defines the domain
 
 3. **Feature modules within a package** — a large package might contain multiple modules:
-   - `packages/aima/src/mastra/agents/specialists/onboarding.ts` → could be its own sub-module
+   - `packages/core/src/features/onboarding/index.ts` → could be its own sub-module
    - Only split if the docs site treats it as a separate section
 
 4. **Infrastructure vs. domain** — separate infrastructure (db, shared, tsconfig) from domain modules (payments, auth, dashboard). Infrastructure packages are usually not their own modules unless the docs site documents them.
@@ -133,17 +133,17 @@ For each detected module, determine:
 |--------|-------|------|--------|
 | payments | packages/payments/**, apps/api/src/routes/payments.* | shared/payments | both |
 | auth | packages/shared/src/auth/**, apps/api/src/routes/auth.* | shared/authentication | both |
-| aima | packages/aima/** | aima | both |
+| dashboard | apps/dashboard/** | dashboard | both |
 | admin | apps/admin/** | admin-dashboard | docs only (stub) |
-| creative-engine | packages/creative-engine/** | creative-engine | both |
-| managed-ads | packages/managed-ads/** | managed-ads | code only (no docs) |
+| notifications | packages/notifications/** | notifications | both |
+| billing | packages/billing/** | billing | code only (no docs) |
 | db | packages/db/** | (infrastructure) | — |
 | shared | packages/shared/** | shared | partial |
 
 Connections:
   payments → db, shared
-  aima → payments, managed-ads, creative-engine, db
-  admin → payments, aima, managed-ads
+  dashboard → payments, billing, notifications, db
+  admin → payments, dashboard, billing
   ...
 
 Does this look right? I'll generate the registry from this.
@@ -225,30 +225,30 @@ Analyze the delta between code and docs:
 - auth — docs match implementation
 
 ### Code Without Docs (N)
-- managed-ads — 5 features implemented, no doc pages
-  - Campaign creation
-  - Budget management
-  - Metrics sync
-  - Refund service
-  - Google Ads integration
+- billing — 5 features implemented, no doc pages
+  - Invoice generation
+  - Subscription management
+  - Usage metering
+  - Refund processing
+  - Payment method CRUD
 
 ### Docs Without Code (N)
 - admin/analytics — doc page exists but feature not implemented
 
 ### Stale Docs (N)
 - shared/storage — docs reference old S3 API, code uses R2 SDK
-  Evidence: docs mention `@aws-sdk/client-s3`, code imports `@hellyeah/shared/storage`
+  Evidence: docs mention `@aws-sdk/client-s3`, code imports `@acme/shared/storage`
 
 ### Missing Cross-References (N)
-- aima/index.mdx mentions "Payments" but doesn't link to /shared/payments
-- managed-ads has no doc page, so nothing can link to it
+- dashboard/index.mdx mentions "Payments" but doesn't link to /shared/payments
+- billing has no doc page, so nothing can link to it
 
 ---
 
 ### Recommended Next Steps
-1. Run `/scaffold` or `/docs` to create docs for managed-ads (5 undocumented features)
+1. Run `/scaffold` or `/docs` to create docs for billing (5 undocumented features)
 2. Update shared/storage docs (stale — S3 → R2 migration)
-3. Add cross-reference links in aima/index.mdx
+3. Add cross-reference links in dashboard/index.mdx
 4. `/build` for any new features — the registry is ready
 ```
 
