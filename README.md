@@ -14,7 +14,6 @@
 
 **An agent harness for doc-driven development** — with git-native progress tracking.
 
-> **Status:** Early release (v0.1) — Claude Code only. Multi-runtime support is planned.
 
 ```bash
 # Interactive setup guide
