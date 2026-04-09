@@ -4,7 +4,7 @@
   "description": "An agent harness for doc-driven development",
   "type": "module",
   "bin": {
-    "ystack": "./bin/cli.js"
+    "ystack": "bin/cli.js"
   },
   "files": [
     "skills/",
@@ -29,7 +29,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yulonghe97/ystack.git"
+    "url": "git+https://github.com/yulonghe97/ystack.git"
   },
   "dependencies": {
     "@clack/prompts": "^1.2.0"
