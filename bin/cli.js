@@ -138,7 +138,7 @@ function installHooks(projectRoot, ystackRoot) {
 			matcher: "*",
 			hooks: [{
 				type: "command",
-				command: `node "${join(projectRoot, ".claude", "hooks", "context-monitor.js")}"`,
+				command: `node .claude/hooks/context-monitor.js`,
 				timeout: 5,
 			}],
 		});
@@ -154,7 +154,7 @@ function installHooks(projectRoot, ystackRoot) {
 			matcher: "Edit|Write",
 			hooks: [{
 				type: "command",
-				command: `node "${join(projectRoot, ".claude", "hooks", "workflow-nudge.js")}"`,
+				command: `node .claude/hooks/workflow-nudge.js`,
 				timeout: 5,
 			}],
 		});
@@ -169,7 +169,7 @@ function installHooks(projectRoot, ystackRoot) {
 			matcher: "Bash",
 			hooks: [{
 				type: "command",
-				command: `node "${join(projectRoot, ".claude", "hooks", "progress-before-ship.js")}"`,
+				command: `node .claude/hooks/progress-before-ship.js`,
 				timeout: 5,
 			}],
 		});
@@ -184,7 +184,7 @@ function installHooks(projectRoot, ystackRoot) {
 			matcher: "Edit",
 			hooks: [{
 				type: "command",
-				command: `node "${join(projectRoot, ".claude", "hooks", "no-undocumented-check.js")}"`,
+				command: `node .claude/hooks/no-undocumented-check.js`,
 				timeout: 5,
 			}],
 		});
@@ -199,7 +199,7 @@ function installHooks(projectRoot, ystackRoot) {
 			matcher: "Edit|Write",
 			hooks: [{
 				type: "command",
-				command: `node "${join(projectRoot, ".claude", "hooks", "docs-match-progress.js")}"`,
+				command: `node .claude/hooks/docs-match-progress.js`,
 				timeout: 5,
 			}],
 		});
@@ -217,6 +217,8 @@ function installHooks(projectRoot, ystackRoot) {
 		for (const file of readdirSync(hooksDir)) {
 			cpSync(join(hooksDir, file), join(targetHooksDir, file));
 		}
+		// Ensure ESM imports work regardless of the consuming repo's package.json
+		writeFileSync(join(targetHooksDir, "package.json"), '{ "type": "module" }\n');
 	}
 }
 

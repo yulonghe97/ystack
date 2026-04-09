@@ -10,11 +10,13 @@
  */
 
 import { existsSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
+import { createHash } from "node:crypto";
 
-// Session state file — tracks edited files and nudge status
-const STATE_FILE = join(tmpdir(), ".ystack-nudge-state.json");
+// Scope state file per repo to avoid cross-project leakage
+const repoId = createHash("md5").update(resolve(".")).digest("hex").slice(0, 8);
+const STATE_FILE = join(tmpdir(), `.ystack-nudge-${repoId}.json`);
 
 // Load state
 let state = { editedFiles: [], nudged: false };

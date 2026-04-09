@@ -30,35 +30,28 @@ cd your-project && npx ystack init
 
 ## Why
 
-AI coding agents are capable but unstructured. Without guardrails:
+Most AI agent setups have a dirty secret: the context they feed the agent is separate from the docs humans read. You end up maintaining two sources of truth — one rots, the other drifts, and neither is reliable.
+
+ystack makes your documentation site the single source of truth for both humans and agents.
 
 ```
-  Without ystack                       With ystack
-  ──────────────                       ──────────────
+  One doc page serves four roles:
 
-  "Build auth"                         "Build auth"
-       │                                    │
-       ▼                                    ▼
-  ┌────────────┐                       ┌────────────┐
-  │ Hallucinate│                       │ Read spec  │
-  │ a design   │                       │ first      │
-  └─────┬──────┘                       └─────┬──────┘
-        ▼                                    ▼
-  ┌────────────┐                       ┌────────────┐
-  │ Code it all│                       │ Plan tasks │
-  │ at once    │                       │ you confirm│
-  └─────┬──────┘                       └─────┬──────┘
-        ▼                                    ▼
-  ┌────────────┐                       ┌────────────┐
-  │ "Done!"    │                       │ Execute +  │
-  │ (is it?)   │                       │ verify     │
-  └─────┬──────┘                       └─────┬──────┘
-        ▼                                    ▼
-  ┌────────────┐                       ┌────────────┐
-  │ Docs? What │                       │ Update     │
-  │ docs?      │                       │ docs       │
-  └────────────┘                       └────────────┘
+  ┌─────────────────────────────────────────────┐
+  │            docs/payments.mdx                │
+  │                                             │
+  │  → Spec the agent reads before coding       │
+  │  → Reference your team reads to understand  │
+  │  → Context a new dev uses to onboard        │
+  │  → Contract between modules at boundaries   │
+  │                                             │
+  │  You write it once. It serves all four.     │
+  └─────────────────────────────────────────────┘
 ```
+
+**Hard rule: docs reflect only completed work.** No "planned", no "coming soon", no six-month-old TODOs. If it's in the docs, it's built, verified, and working. The gap between docs and reality is always zero.
+
+This means agents get accurate context every time — not hallucinated architecture, not aspirational specs, not stale planning artifacts that nobody maintains.
 
 See [PHILOSOPHY.md](./PHILOSOPHY.md) for the full design rationale.
 

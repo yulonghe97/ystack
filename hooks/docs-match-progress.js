@@ -34,14 +34,15 @@ if (!docsRoot || !filePath.includes(docsRoot)) {
 	process.exit(0);
 }
 
-// Find which module this doc file belongs to
+// Find which module this doc file belongs to (longest match wins)
 const modules = config.modules || {};
 let matchedModule = null;
+let longestMatch = 0;
 
 for (const [key, mod] of Object.entries(modules)) {
-	if (mod.doc && filePath.includes(mod.doc)) {
+	if (mod.doc && filePath.includes(mod.doc) && mod.doc.length > longestMatch) {
 		matchedModule = key;
-		break;
+		longestMatch = mod.doc.length;
 	}
 }
 
