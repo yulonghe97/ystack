@@ -1,9 +1,18 @@
 # ystack
 
+```
+                 _             _
+  _   _ ___| |_ __ _  ___| | __
+ | | | / __| __/ _` |/ __| |/ /
+ | |_| \__ \ || (_| | (__|   <
+  \__, |___/\__\__,_|\___|_|\_\
+  |___/
+```
+
 [![npm version](https://img.shields.io/npm/v/ystack)](https://www.npmjs.com/package/ystack)
 [![license](https://img.shields.io/npm/l/ystack)](./LICENSE)
 
-An agent harness for doc-driven development — built on top of [Beads](https://github.com/gastownhall/beads).
+**An agent harness for doc-driven development** — built on top of [Beads](https://github.com/gastownhall/beads).
 
 > **Status:** Early release (v0.1) — Claude Code only. Multi-runtime support is planned.
 
@@ -18,39 +27,66 @@ npx ystack create my-app
 cd your-project && npx ystack init
 ```
 
+---
+
 ## Why
 
-AI coding agents are capable but unstructured. Without guardrails, they:
+AI coding agents are capable but unstructured. Without guardrails:
 
-- **Hallucinate architecture** — invent module boundaries that don't exist
-- **Silently simplify** — deliver a "v1" of what you asked for instead of the real thing
-- **Lose context** — forget decisions from 20 minutes ago as the context window fills
-- **Skip verification** — mark tasks done without checking the code actually works
-- **Ignore docs** — write code that drifts from the documented design, or never update docs at all
+```
+  Without ystack                       With ystack
+  ──────────────                       ──────────────
 
-ystack fixes this. It makes agents read the spec before coding, plan before executing, verify against success criteria, and update docs when done. See [PHILOSOPHY.md](./PHILOSOPHY.md) for the full design rationale.
+  "Build auth"                         "Build auth"
+       │                                    │
+       ▼                                    ▼
+  ┌────────────┐                       ┌────────────┐
+  │ Hallucinate│                       │ Read spec  │
+  │ a design   │                       │ first      │
+  └─────┬──────┘                       └─────┬──────┘
+        ▼                                    ▼
+  ┌────────────┐                       ┌────────────┐
+  │ Code it all│                       │ Plan tasks │
+  │ at once    │                       │ you confirm│
+  └─────┬──────┘                       └─────┬──────┘
+        ▼                                    ▼
+  ┌────────────┐                       ┌────────────┐
+  │ "Done!"    │                       │ Execute +  │
+  │ (is it?)   │                       │ verify     │
+  └─────┬──────┘                       └─────┬──────┘
+        ▼                                    ▼
+  ┌────────────┐                       ┌────────────┐
+  │ Docs? What │                       │ Update     │
+  │ docs?      │                       │ docs       │
+  └────────────┘                       └────────────┘
+```
+
+See [PHILOSOPHY.md](./PHILOSOPHY.md) for the full design rationale.
+
+---
 
 ## How It Works
 
 Three layers, connected by a module registry:
 
 ```
-  Docs (MDX)          Beads (bd)           Code
-  What it IS    ◄───  What's done /  ───►  The actual
-  Final specs         what's left          implementation
-       ▲                   ▲                    ▲
-       └───────────────────┴────────────────────┘
-                    Module Registry
-                  (ystack.config.json)
+  ┌──────────────────────────────────────────────────────────┐
+  │                    ystack.config.json                     │
+  │                     (Module Registry)                     │
+  ├──────────────────┬──────────────────┬────────────────────┤
+  │                  │                  │                    │
+  │   Docs (MDX)     │   Beads (bd)     │   Code             │
+  │   ━━━━━━━━━━     │   ━━━━━━━━━━     │   ━━━━             │
+  │   What it IS     │   What's DONE    │   The actual       │
+  │   Final specs    │   What's LEFT    │   implementation   │
+  │   Design truth   │   Memory layer   │   Lives here       │
+  │                  │                  │                    │
+  │   agents read <──┼── tracks ───────>┼── agents write     │
+  │                  │                  │                    │
+  └──────────────────┴──────────────────┴────────────────────┘
 ```
 
-| Layer | Role |
-|-------|------|
-| **Docs** | The spec agents read, the reference your team reads, the contract between modules. Written once, serves all three. |
-| **Beads** | Development state machine. What's built, in progress, or blocked. Persistent memory that survives context resets. |
-| **Code** | The implementation. Architecture lives in docs, progress lives in Beads. |
-
-Each module in `ystack.config.json` maps a doc page, code scope (glob patterns), and a Beads epic:
+Each module maps a doc page, code scope, and a Beads epic:
 
 ```json
 {
@@ -64,32 +100,35 @@ Each module in `ystack.config.json` maps a doc page, code scope (glob patterns),
 }
 ```
 
-## Commands
+---
 
-### Setup
+## The Workflow
+
+```
+  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
+  │/scaffold │───>│  /build  │───>│   /go    │───>│ /review  │───>│  /docs   │───>│   /pr    │
+  │ or       │    │          │    │          │    │          │    │          │    │          │
+  │/import   │    │ Plan &   │    │ Execute  │    │ Verify   │    │ Update   │    │ Ship     │
+  │          │    │ confirm  │    │ tasks w/ │    │ against  │    │ docs for │    │ it       │
+  │ Scan or  │    │ with     │    │ fresh    │    │ success  │    │completed │    │          │
+  │ scaffold │    │ user     │    │subagents │    │ criteria │    │ work     │    │          │
+  └──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘
+```
+
+### Commands
 
 | Command | What it does |
 |---------|-------------|
-| `/scaffold` | Takes a big plan, splits it into module doc stubs + interaction diagrams + epic beads |
-| `/import` | Scans an existing repo, generates module registry, flags doc gaps |
-
-### Build cycle
-
-| Command | What it does |
-|---------|-------------|
+| `/scaffold` | Takes a big plan, splits into module doc stubs + diagrams + epic beads |
+| `/import` | Scans existing repo, generates module registry, flags doc gaps |
 | `/build <feature>` | Reads docs + code, surfaces assumptions, creates a plan. You confirm. |
-| `/go` | Executes the plan — fresh subagent per task, atomic commits. |
-| `/review` | Code review + goal-backward verification against success criteria. |
-| `/docs` | Updates documentation for completed work (only completed, never planned). |
-| `/pr` | Verify, docs check, create PR. |
-| `/address-review` | Fetch PR review comments, triage by priority, address approved fixes. |
+| `/go` | Executes the plan — fresh subagent per task, atomic commits |
+| `/review` | Code review + goal-backward verification against success criteria |
+| `/docs` | Updates documentation for completed work (only completed, never planned) |
+| `/pr` | Verify, docs check, create PR |
+| `/address-review` | Fetch PR review comments, triage by priority, address approved fixes |
 
-### The flow
-
-```
-New project:       big plan → /scaffold → /build → /go → /review → /docs → /pr
-Existing project:  repo → /import → /build → /go → /review → /docs → /pr
-```
+---
 
 ## Getting Started
 
