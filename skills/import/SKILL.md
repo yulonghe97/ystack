@@ -1,7 +1,7 @@
 ---
 name: import
 description: >
-  Analyze an existing codebase and generate a ystack module registry, Beads epics,
+  Analyze an existing codebase and generate a ystack module registry, progress files,
   and a documentation gap report. Use this skill when the user says 'import', '/import',
   'adopt this project', 'onboard this repo', 'scan the codebase', 'set up ystack here',
   or when adding ystack to a project that already has code and possibly docs.
@@ -11,94 +11,164 @@ user-invocable: true
 
 # /import — Adopt an Existing Project
 
-You analyze an existing codebase and produce a module registry, Beads epics, and a gap report. This is the on-ramp for projects that already have code.
+You analyze an existing codebase and produce a module registry, progress files, and a gap report. This is the on-ramp for projects that already have code.
 
 **You do NOT modify code or docs.** You produce a registry and report. The user decides what to act on.
 
 ## Phase 0: Determine Scope
 
-1. Check if `ystack.config.json` already exists:
+1. Check if `.ystack/config.json` already exists:
    ```bash
-   cat ystack.config.json 2>/dev/null
+   cat .ystack/config.json 2>/dev/null
    ```
 
 2. If a `--module <name>` argument was provided, scope the import to that module only. Otherwise, scan the entire repo.
 
 3. If the config already has modules registered, note which are new vs. already known.
 
-## Phase 1: Scan the Codebase
+4. Identify the project root — store it as `$PROJECT_ROOT` for the scan agents.
 
-Analyze the repo structure to detect logical modules. Spawn parallel research for each area:
+## Phase 1: Scan the Codebase (parallel subagents)
 
-### 1a: Structure scan
+**You MUST use the Agent tool to run these 4 scans in parallel.** Launch all 4 agents in a single message so they execute concurrently. Each agent writes its findings to a file in `.context/import/` so results survive context limits.
 
-Map the directory tree to identify module boundaries:
+Before launching agents, create the output directory:
 ```bash
-# Find package.json files (monorepo packages)
-find . -name "package.json" -not -path "*/node_modules/*" -maxdepth 3
-
-# Get directory structure
-ls -d apps/*/ packages/*/ 2>/dev/null
-
-# Check for monorepo config
-cat turbo.json 2>/dev/null
-cat pnpm-workspace.yaml 2>/dev/null
-cat lerna.json 2>/dev/null
+mkdir -p .context/import
 ```
 
-Classify each directory:
-- `apps/*` → likely an app module (UI, server, API)
-- `packages/*` → likely a library package
-- `src/modules/*` or `src/features/*` → feature-based structure (single-app repo)
-- Top-level `src/` without sub-packages → single-module project
+### Launch 4 agents in parallel
 
-### 1b: Dependency scan
+Use the Agent tool with `subagent_type: "Explore"` for each. Include the project root path in every agent prompt so they know where to look.
 
-Map imports between modules to understand connections:
-```bash
-# Find cross-package imports
-grep -r "from ['\"]@" packages/ apps/ --include="*.ts" --include="*.tsx" -l 2>/dev/null
+---
 
-# Check package.json dependencies for workspace references
-cat packages/*/package.json | grep "workspace:" 2>/dev/null
+**Agent 1 — "structure-scan"**
+
+Prompt the agent with:
+
+> Scan the codebase at `$PROJECT_ROOT` and write findings to `$PROJECT_ROOT/.context/import/scan-structure.md`.
+>
+> Your job: map the directory tree and identify module boundaries.
+>
+> 1. Find all package.json files (exclude node_modules), up to depth 3
+> 2. List directories under apps/, packages/, src/modules/, src/features/ if they exist
+> 3. Check for monorepo config: turbo.json, pnpm-workspace.yaml, lerna.json, nx.json
+> 4. Read the root package.json for project name and workspace config
+>
+> Classify each directory:
+> - `apps/*` → app module (UI, server, API)
+> - `packages/*` → library package
+> - `src/modules/*` or `src/features/*` → feature-based structure
+> - Top-level `src/` without sub-packages → single-module project
+>
+> Write your output as a structured markdown file with:
+> - Project name
+> - Monorepo tool (if any)
+> - A table of directories with: path, type (app/package/feature/single), and a one-line description based on its package.json name/description or directory name
+>
+> Do NOT modify any files other than the output file.
+
+---
+
+**Agent 2 — "dependency-scan"**
+
+Prompt the agent with:
+
+> Scan the codebase at `$PROJECT_ROOT` and write findings to `$PROJECT_ROOT/.context/import/scan-dependencies.md`.
+>
+> Your job: map imports and dependencies between packages to build a dependency graph.
+>
+> 1. For each package.json in apps/ and packages/, extract:
+>    - Package name
+>    - Dependencies and devDependencies that reference workspace packages (look for `workspace:` protocol or `@<org>/` packages that match other packages in the repo)
+> 2. Search for cross-package imports in .ts/.tsx/.js/.jsx files:
+>    - `from '@<org>/...'` or `from '<package-name>'` patterns that reference sibling packages
+>    - Focus on the import sources, not every file — just which packages import from which
+> 3. Identify shared/foundational packages that many others depend on
+>
+> Write your output as a structured markdown file with:
+> - A dependency table: package → depends on [list]
+> - A "most depended on" ranking
+> - Any circular dependency warnings
+>
+> Do NOT modify any files other than the output file.
+
+---
+
+**Agent 3 — "schema-scan"**
+
+Prompt the agent with:
+
+> Scan the codebase at `$PROJECT_ROOT` and write findings to `$PROJECT_ROOT/.context/import/scan-schemas.md`.
+>
+> Your job: identify data models, API routes, and type definitions.
+>
+> 1. Database schemas — find files matching: `**/schema*.ts`, `**/models/**`, `**/entities/**`, `**/prisma/schema.prisma`, `**/drizzle/**`
+> 2. Migrations — find directories matching: `**/migrations/**`
+> 3. API routes — find files in: `**/routes/**`, `**/api/**`, `**/app/api/**` (Next.js app router)
+> 4. Shared types — find files in: `**/types/**`, `**/*.types.ts`, `**/*.d.ts` (exclude node_modules)
+> 5. For each schema/model file found, briefly note what entities/tables it defines (read the file to extract type/interface/table names)
+> 6. For each API route directory, list the route files and their HTTP methods if detectable
+>
+> Write your output as a structured markdown file with:
+> - Data models section: file path → entities defined
+> - API routes section: route path → methods
+> - Shared types section: file path → key types exported
+>
+> Do NOT modify any files other than the output file.
+
+---
+
+**Agent 4 — "docs-scan"**
+
+Prompt the agent with:
+
+> Scan the codebase at `$PROJECT_ROOT` and write findings to `$PROJECT_ROOT/.context/import/scan-docs.md`.
+>
+> Your job: find existing documentation and map it to code modules.
+>
+> 1. Check for doc frameworks:
+>    - Nextra: look for `docs/src/content/_meta.ts` or `docs/_meta.ts`
+>    - Fumadocs: look for `content/docs/meta.json`
+>    - Docusaurus: look for `docs/` with `docusaurus.config.*`
+>    - Mintlify: look for `mint.json`
+>    - Generic: look for `docs/`, `README.md`, `CLAUDE.md`, `AGENTS.md`
+> 2. If a doc framework is found, read the navigation config (`_meta.ts`, `meta.json`, `mint.json`, `sidebars.*`) to understand the doc site structure
+> 3. List all .md and .mdx files in the docs directory
+> 4. For each doc section/page, note:
+>    - The page path (relative to docs root)
+>    - The page title (from frontmatter or first heading)
+>    - Which code module it likely corresponds to (by name matching)
+> 5. Read CLAUDE.md and AGENTS.md if they exist — extract any project context
+>
+> Write your output as a structured markdown file with:
+> - Docs framework detected
+> - Docs root path
+> - Navigation structure (sections and pages)
+> - A table mapping: doc page → likely code module
+> - Any project context from CLAUDE.md/AGENTS.md
+>
+> Do NOT modify any files other than the output file.
+
+---
+
+### Collect scan results
+
+After all 4 agents complete, read their output files:
+
+```
+.context/import/scan-structure.md
+.context/import/scan-dependencies.md
+.context/import/scan-schemas.md
+.context/import/scan-docs.md
 ```
 
-Build a dependency graph: which modules import from which.
-
-### 1c: Schema scan
-
-Identify data models, API routes, and type definitions:
-```bash
-# Database schemas
-find . -path "*/schema*" -name "*.ts" -not -path "*/node_modules/*" 2>/dev/null
-find . -path "*/migrations*" -not -path "*/node_modules/*" -type d 2>/dev/null
-
-# API routes
-find . -path "*/routes/*" -o -path "*/api/*" -name "*.ts" -not -path "*/node_modules/*" 2>/dev/null
-
-# Shared types
-find . -path "*/types/*" -name "*.ts" -not -path "*/node_modules/*" 2>/dev/null
-```
-
-### 1d: Docs scan
-
-Find existing documentation and map it to modules:
-```bash
-# Nextra
-ls docs/src/content/_meta.ts 2>/dev/null && find docs/src/content -name "*.mdx" -o -name "*.md" 2>/dev/null
-
-# Fumadocs
-ls content/docs/meta.json 2>/dev/null && find content/docs -name "*.mdx" -o -name "*.md" 2>/dev/null
-
-# Generic docs
-ls docs/ README.md CLAUDE.md AGENTS.md 2>/dev/null
-```
-
-Read `_meta.ts` or `meta.json` files to understand the doc site structure. Read `CLAUDE.md` and `AGENTS.md` for project context.
+If `--module <name>` was specified, you may skip agents whose scope doesn't overlap with the target module, but generally it's better to run all 4 and filter in Phase 2.
 
 ## Phase 2: Detect Modules
 
-Group the scan results into logical modules.
+Using the collected scan results from `.context/import/`, group findings into logical modules.
 
 ### Grouping rules
 
@@ -153,7 +223,7 @@ Does this look right? I'll generate the registry from this.
 
 ## Phase 3: Generate Module Registry
 
-Create or update `ystack.config.json`:
+Create or update `.ystack/config.json`:
 
 ```json
 {
@@ -169,8 +239,7 @@ Create or update `ystack.config.json`:
         "packages/payments/**",
         "packages/db/src/schema/transactions.*",
         "apps/api/src/routes/payments.*"
-      ],
-      "status": "active"
+      ]
     }
   }
 }
@@ -179,34 +248,66 @@ Create or update `ystack.config.json`:
 For each module:
 - `doc` — the matching docs path, or `null` if no docs exist
 - `scope` — glob patterns covering all files that belong to this module
-- `status` — `"active"` if code exists, `"planned"` if only docs/stubs
 
 If the config already exists, merge new modules — don't overwrite existing entries.
 
-## Phase 4: Create Beads Epics
+## Phase 4: Create Progress Files
 
-If Beads (`bd`) is available:
+Create a progress file per module in `.ystack/progress/`:
 
-1. Create an epic per module:
-   ```bash
-   bd create "<Module Name>" -t epic --metadata '{"doc": "<module-slug>", "ystack": true}'
-   ```
+For each module, write `.ystack/progress/<module-slug>.md`:
 
-2. For each implemented feature detected in the code, create a **closed** child bead:
-   ```bash
-   bd create "<Feature description>" -t feature --parent <epic-id>
-   bd close <bead-id> --reason "Pre-existing implementation detected by /import"
-   ```
+```markdown
+# <Module Name>
 
-3. Add inter-module dependencies:
-   ```bash
-   bd dep add <epic-id> related:<dependent-epic-id>
-   ```
+## Features
+- [x] <Implemented Feature 1>    → <doc-path>#<anchor>
+- [x] <Implemented Feature 2>    → <doc-path>#<anchor>
+- [?] <Feature with code but no docs>  → (needs docs)
+      ⚠️ Code exists but no doc section found
+- [ ] <Planned Feature>          → <doc-path>#<anchor>
 
-4. Update `ystack.config.json` with epic IDs.
+## Decisions
+| Date       | Feature | Decision                              |
+|------------|---------|---------------------------------------|
+| pre-import | All     | Pre-existing — detected by /import    |
 
-If Beads is not available, skip and note:
-> Beads not detected. Run `bd init` to enable progress tracking.
+## Notes
+```
+
+For already-implemented features, mark as `[x]`.
+For features with code but missing docs, mark as `[?]` with a warning annotation.
+For planned features (docs exist but no code), mark as `[ ]`.
+
+Create `.ystack/progress/_overview.md`:
+
+```markdown
+# Project Progress
+
+## Module Status
+
+| Module | Done | Total | Gaps | Status |
+|--------|------|-------|------|--------|
+| payments | 5 | 5 | 0 | complete |
+| auth | 2 | 4 | 1 | in progress |
+| admin | 4 | 5 | 1 | in progress |
+
+## Dependencies
+
+auth → db
+payments → auth, db
+admin → payments, auth
+
+## Ready Front
+
+- auth/oauth (sessions complete, ready to build)
+- admin/team-settings (no dependencies)
+
+## Documentation Gaps
+
+- auth/oauth: code exists, no doc section
+- admin/team-settings: code exists, no doc section
+```
 
 ## Phase 5: Generate Gap Report
 
@@ -268,10 +369,10 @@ Only flag clear mismatches. Don't flag vague prose that's technically correct.
 ## Import Complete
 
 ### Registry
-  ystack.config.json — N modules registered
+  .ystack/config.json — N modules registered
 
-### Beads
-  N epics created, M features tracked (K pre-closed as implemented)
+### Progress
+  N progress files created, M features tracked (K checked as implemented)
 
 ### Documentation
   N pages found, M gaps detected
@@ -279,7 +380,7 @@ Only flag clear mismatches. Don't flag vague prose that's technically correct.
 ### Next Steps
   - Fix N doc gaps with /docs or /scaffold
   - Run /build to start new feature work
-  - The module registry connects code ↔ docs ↔ beads
+  - The module registry connects code ↔ docs ↔ progress
 ```
 
 ---
@@ -290,7 +391,7 @@ With `--module <name>`:
 
 1. Only scan files matching the specified module name or path
 2. Only create one module entry in the registry
-3. Only create one epic in Beads
+3. Only create one progress file
 4. Gap report scoped to that module
 
 This is useful for large repos where a full scan is too slow, or when onboarding one team at a time.

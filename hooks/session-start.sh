@@ -2,19 +2,24 @@
 # ystack session start — shows project status on session start
 
 # Check for ystack project
-if [ ! -f "ystack.config.json" ]; then
+if [ ! -f ".ystack/config.json" ]; then
   exit 0
 fi
 
 echo "[ystack] Project detected"
 
-# Show Beads ready front
-if [ -d ".beads" ] && command -v bd &> /dev/null; then
-  READY=$(bd ready --json 2>/dev/null | head -5)
-  if [ -n "$READY" ]; then
+# Show ready front from progress files
+if [ -d ".ystack/progress" ]; then
+  # Count unchecked items across all progress files
+  UNCHECKED=$(grep -r '^\- \[ \]' .ystack/progress/*.md 2>/dev/null | head -10)
+  if [ -n "$UNCHECKED" ]; then
     echo ""
     echo "Ready to work on:"
-    bd ready 2>/dev/null | head -10
+    grep -r '^\- \[ \]' .ystack/progress/*.md 2>/dev/null | head -10 | while read -r line; do
+      FILE=$(echo "$line" | cut -d: -f1 | xargs basename .md)
+      FEATURE=$(echo "$line" | sed 's/.*\- \[ \] //' | sed 's/  *→.*//')
+      echo "  $FILE — $FEATURE"
+    done
   fi
 fi
 

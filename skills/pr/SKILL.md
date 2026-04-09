@@ -35,14 +35,23 @@ Detect if code changes affect documented modules:
 git diff main...HEAD --stat
 
 # Check if any changed packages map to doc pages
-# Read ystack.config.json or scan docs structure
+# Read .ystack/config.json or scan docs structure
 ```
 
-If code changed in a module that has docs, but no docs files were modified in this branch:
-> Code changes in **payments** but docs at `docs/src/content/shared/payments/` weren't updated.
-> Run `/docs` to update, or confirm docs don't need changes.
+**If this is a `/quick` change** (`.context/.quick` exists): skip doc check entirely. Quick fixes don't need doc updates.
 
-If the user confirms no docs needed, proceed.
+**If this is a feature** (`.context/<feature>/PLAN.md` exists):
+
+1. Read `.ystack/progress/<module>.md` for newly checked `[x]` items.
+2. Check if the linked doc sections still have `<!-- ystack:stub -->`.
+3. If stubs remain:
+   > Feature **OAuth** is checked off but docs still have stubs. Running `/docs` to fill them in...
+
+   Run `/docs` inline — don't just warn, actually execute the doc update. Then continue with the PR.
+4. If no stubs and no doc changes needed, proceed.
+
+**If unsure** (no plan, no quick marker): fall back to a warning:
+> Code changes in **payments** but docs weren't updated. Run `/docs` to update, or confirm docs don't need changes.
 
 ### 3. Lint and typecheck
 
@@ -118,11 +127,7 @@ Create the PR directly:
 
 After the PR is created:
 
-1. **Close beads** (if Beads is available):
-   ```bash
-   # Verify all feature beads are closed
-   bd show <bead-id>
-   ```
+1. **Verify progress** — confirm all features in scope are checked in `.ystack/progress/<module>.md`.
 
 2. **Archive `.context/`** — don't delete, just note it's done:
    ```

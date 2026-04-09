@@ -12,7 +12,7 @@
 [![npm version](https://img.shields.io/npm/v/ystack)](https://www.npmjs.com/package/ystack)
 [![license](https://img.shields.io/npm/l/ystack)](./LICENSE)
 
-**An agent harness for doc-driven development** — built on top of [Beads](https://github.com/gastownhall/beads).
+**An agent harness for doc-driven development** — with git-native progress tracking.
 
 > **Status:** Early release (v0.1) — Claude Code only. Multi-runtime support is planned.
 
@@ -71,30 +71,29 @@ Three layers, connected by a module registry:
 
 ```
   ┌──────────────────────────────────────────────────────────┐
-  │                    ystack.config.json                     │
+  │                    .ystack/config.json                    │
   │                     (Module Registry)                     │
   ├──────────────────┬──────────────────┬────────────────────┤
   │                  │                  │                    │
-  │   Docs (MDX)     │   Beads (bd)     │   Code             │
-  │   ━━━━━━━━━━     │   ━━━━━━━━━━     │   ━━━━             │
-  │   What it IS     │   What's DONE    │   The actual       │
-  │   Final specs    │   What's LEFT    │   implementation   │
-  │   Design truth   │   Memory layer   │   Lives here       │
-  │                  │                  │                    │
+  │   Docs (MDX)     │   Progress       │   Code             │
+  │   ━━━━━━━━━━     │   (.ystack/)     │   ━━━━             │
+  │   What it IS     │   ━━━━━━━━━━     │   The actual       │
+  │   Final specs    │   What's DONE    │   implementation   │
+  │   Design truth   │   What's LEFT    │   Lives here       │
+  │                  │   State layer    │                    │
   │   agents read <──┼── tracks ───────>┼── agents write     │
   │                  │                  │                    │
   └──────────────────┴──────────────────┴────────────────────┘
 ```
 
-Each module maps a doc page, code scope, and a Beads epic:
+Each module maps a doc page and code scope:
 
 ```json
 {
   "modules": {
     "payments": {
       "doc": "shared/payments",
-      "scope": ["packages/payments/**", "apps/api/src/routes/payments.*"],
-      "epic": "bd-a1b2"
+      "scope": ["packages/payments/**", "apps/api/src/routes/payments.*"]
     }
   }
 }
@@ -119,10 +118,11 @@ Each module maps a doc page, code scope, and a Beads epic:
 
 | Command | What it does |
 |---------|-------------|
-| `/scaffold` | Takes a big plan, splits into module doc stubs + diagrams + epic beads |
+| `/scaffold` | Takes a big plan, splits into module doc stubs + diagrams + progress files |
 | `/import` | Scans existing repo, generates module registry, flags doc gaps |
 | `/build <feature>` | Reads docs + code, surfaces assumptions, creates a plan. You confirm. |
 | `/go` | Executes the plan — fresh subagent per task, atomic commits |
+| `/quick` | Fast path for bug fixes, chores, small changes — skip planning and progress |
 | `/review` | Code review + goal-backward verification against success criteria |
 | `/docs` | Updates documentation for completed work (only completed, never planned) |
 | `/pr` | Verify, docs check, create PR |
@@ -149,7 +149,6 @@ See [INSTALL.md](./INSTALL.md) for full setup options, prerequisites, and config
 - [INSTALL.md](./INSTALL.md) — Installation and default stack
 - [LINTING.md](./LINTING.md) — Agent linting rules
 - [RUNTIMES.md](./RUNTIMES.md) — Multi-runtime support
-- [PLAN.md](./PLAN.md) — Roadmap and command specs
 
 ## Contributing
 

@@ -28,7 +28,7 @@ You write it once. It serves all four purposes. There is no separate "planning d
 
 ```
 Docs        →  What the system IS (final state)
-Beads       →  What's been done, what's left (development state)
+Progress    →  What's been done, what's left (development state)
 Code        →  The actual implementation
 ```
 
@@ -36,9 +36,9 @@ These three layers never overlap in responsibility:
 
 **Docs** describe the finished design. They answer: what does this module do? How does it connect to other modules? What data does it manage? What are the contracts at its boundaries? Docs never contain "planned", "coming soon", "TODO", or "v2". If it's in the docs, it's built and working.
 
-**Beads** tracks the journey. It knows which features are implemented, which are in progress, which are blocked. It holds the structured notes that let an agent resume work after a context reset. It manages dependencies between tasks. Beads is the development state machine — it knows where you are in the process.
+**Progress files** track the journey. They record which features are implemented (checked), which are not yet built (unchecked), and which are blocked (via `depends-on:` annotations). They hold the decisions made during implementation and the notes that let an agent resume work after a context reset. Progress files are the development state — committed to git, branching and merging with the code they track.
 
-**Code** is the implementation. It doesn't need to explain itself beyond what's necessary for maintenance. The architecture lives in docs. The progress lives in Beads. The code just works.
+**Code** is the implementation. It doesn't need to explain itself beyond what's necessary for maintenance. The architecture lives in docs. The progress lives in `.ystack/progress/`. The code just works.
 
 ## Why Human-Readable Markdown
 
@@ -62,7 +62,7 @@ This matters because:
 2. **Docs change.** A reference always points to the current version. Inlined content is stale the moment it's pasted.
 3. **Agents can navigate.** A doc page with cross-references lets the agent follow links to related modules, just like a human developer would.
 
-The module registry (`ystack.config.json`) exists to give agents a map: "payments lives here in the code, here in the docs, and here in Beads." From that map, the agent reads what it needs, when it needs it.
+The module registry (`.ystack/config.json`) exists to give agents a map: "payments lives here in the code, here in the docs, and here in the progress files." From that map, the agent reads what it needs, when it needs it.
 
 ## Connected Documentation
 
@@ -91,21 +91,21 @@ The module registry bridges three worlds:
       "packages/payments/**",
       "packages/db/src/schema/transactions.*",
       "apps/api/src/routes/payments.*"
-    ],
-    "epic": "bd-a1b2"
+    ]
   }
 }
 ```
 
 - **doc** → where to read the spec (and where to write updates when features complete)
 - **scope** → where the code lives, as glob patterns. A module doesn't have to be a package — it can span files across multiple packages, or live within a subdirectory of one. This is what to scan when planning and what to verify when done.
-- **epic** → where progress lives (which features are built, which are pending)
 
-The registry tracks **modules only**. Sub-modules are tracked by the docs site (sub-pages within a module). Features are tracked by Beads (child beads under the module's epic). Each layer has its own hierarchy — the registry connects the top level.
+Progress is tracked by convention in `.ystack/progress/<module-key>.md` — one file per module, with feature checklists, decisions, and notes.
 
-When a Beads epic's child closes, ystack knows which doc page might need updating. When `/build` starts planning, it knows which files across the repo are relevant. When `/import` scans an existing repo, it builds this map automatically.
+The registry tracks **modules only**. Sub-modules are tracked by the docs site (sub-pages within a module). Features are tracked in progress files (checklist items in the module's progress file). Each layer has its own hierarchy — the registry connects the top level.
 
-The registry is small, stable, and rarely changes. It's the index — the docs, code, and beads are the content.
+When a feature is checked off in a progress file, ystack knows which doc page might need updating. When `/build` starts planning, it knows which files across the repo are relevant. When `/import` scans an existing repo, it builds this map automatically.
+
+The registry is small, stable, and rarely changes. It's the index — the docs, code, and progress files are the content.
 
 ## Documentation Reflects Only Completed Work
 
@@ -119,7 +119,7 @@ This means:
 - There's no "planned" section that's been "planned" for six months
 - The gap between docs and reality is always zero for documented features
 
-Beads tracks what's planned and in progress. That's its job. Docs track what's done. The boundary is clean.
+Progress files track what's planned and in progress. That's their role. Docs track what's done. The boundary is clean.
 
 ## Why This Works for Teams
 

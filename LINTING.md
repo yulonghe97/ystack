@@ -1,8 +1,5 @@
 # Agent Linting
 
-> **Status: Design Spec — Not Yet Implemented**
-> None of the agent lint rules, hook infrastructure (`hooks/agent-lint.js`), or per-skill `rules/*.json` files described below are built. This document is a design specification for a future version of ystack. v0.1 includes basic Claude Code hooks (context monitoring, file-count nudge) but not the structured rule system described here.
-
 ## Two Types of Linting
 
 **Code linting** checks what the code looks like — formatting, syntax, style. Tools like Ultracite/Biome handle this. You configure it once and it covers all code. Adding a new feature doesn't mean adding new rules.
@@ -28,43 +25,60 @@ Rules come in two severities:
 - **Warn** — surface a message, let the agent continue. For nudges and best practices.
 - **Block** — prevent the action. For hard constraints that protect quality.
 
-## Core Rules
+---
 
-These ship with ystack out of the box.
+## Built Hooks
 
-### Workflow Rules
+These are implemented and installed by `npx ystack init`.
+
+### Workflow Hooks
+
+| Hook | File | Trigger | What it does |
+|------|------|---------|-------------|
+| **workflow-nudge** | `workflow-nudge.js` | PreToolUse on Edit/Write | After 3+ source files edited without an active `.context/<feature-slug>/PLAN.md`, warns: "Consider /build for tracked changes." Dismissible via `.context/.no-nudge`. |
+| **context-monitor** | `context-monitor.js` | PostToolUse on * | Warns at 60% context usage (suggest subagents) and 80% (suggest finishing current task). Silent if runtime doesn't expose context metrics. |
+| **session-start** | `session-start.sh` | Session start | Shows unchecked features from `.ystack/progress/` and any in-progress plans in `.context/`. |
+
+### Progress Integrity Hooks
+
+| Hook | File | Trigger | What it does |
+|------|------|---------|-------------|
+| **progress-before-ship** | `progress-before-ship.js` | PreToolUse on Bash (git push / gh pr create) | Warns if the branch has code changes but no `.ystack/progress/` updates. Catches `/go` forgetting to check the box. |
+| **docs-match-progress** | `docs-match-progress.js` | PostToolUse on Edit/Write (doc files) | After editing a doc file, checks that `[x]` items in the module's progress file don't still have `<!-- ystack:stub -->` in docs. Catches incomplete doc updates. |
+| **no-undocumented-check** | `no-undocumented-check.js` | PreToolUse on Edit (progress files) | When checking a box `[x]` in a progress file, warns if the linked doc section still has `<!-- ystack:stub -->`. Reminds you to run `/docs` before `/pr`. |
+
+---
+
+## Design Spec — Not Yet Implemented
+
+The rules below are enforced by the skill prompts themselves (the SKILL.md instructions tell the agent what to check). They are not separate hook implementations. A future version of ystack may extract these into standalone hooks for harder enforcement.
+
+### Workflow Rules (prompt-enforced)
 
 | Rule | Severity | When | What it checks |
 |------|----------|------|---------------|
-| `plan-before-edit` | Warn | PreToolUse on Edit | Is there an active `.context/<bead-id>/PLAN.md`? Nudges toward `/build` or `/quick`. |
 | `spec-before-plan` | Block | During `/build` | Did the agent read the module's doc page before creating a plan? Prevents hallucinated architecture. |
-| `decisions-before-execute` | Block | During `/go` | Does `.context/<bead-id>/DECISIONS.md` exist? No executing without confirmed decisions. |
+| `decisions-before-execute` | Block | During `/go` | Does `.context/<feature-slug>/DECISIONS.md` exist? No executing without confirmed decisions. |
 | `plan-checker-passed` | Block | During `/go` | Has the plan-checker agent validated the plan? No executing unchecked plans. |
-| `no-scope-reduction` | Block | During `/plan` | Does the plan cover ALL locked decisions from DECISIONS.md? Catches silent simplification. |
+| `no-scope-reduction` | Block | During `/build` | Does the plan cover ALL locked decisions from DECISIONS.md? Catches silent simplification. |
 
-### Verification Rules
+### Verification Rules (prompt-enforced)
 
 | Rule | Severity | When | What it checks |
 |------|----------|------|---------------|
 | `verify-before-ship` | Block | During `/pr` | Has `/review` passed all success criteria? No shipping unverified work. |
-| `docs-before-ship` | Warn | During `/pr` | Are there closed beads without corresponding doc updates? Nudges toward `/docs`. |
 | `typecheck-before-ship` | Block | During `/pr` | Does `pnpm typecheck` pass? No shipping broken types. |
 
-### Documentation Rules
+### Documentation Rules (prompt-enforced)
 
 | Rule | Severity | When | What it checks |
 |------|----------|------|---------------|
 | `cross-references` | Warn | During `/docs` | Does the updated doc page link to related modules? Flags isolated pages. |
 | `final-state-only` | Block | During `/docs` | Does the doc contain "planned", "coming soon", "TODO", "WIP"? Docs describe what IS. |
-| `module-registered` | Warn | During `/build` | Is the target module in `ystack.config.json`? Catches work outside any module's scope. |
-
-### Context Rules
-
-| Rule | Severity | When | What it checks |
-|------|----------|------|---------------|
-| `context-budget` | Warn | PostToolUse | Is context usage above 60%? Suggests spawning subagents. |
-| `context-critical` | Warn | PostToolUse | Is context usage above 80%? Suggests finishing current task or `/pause`. |
+| `module-registered` | Warn | During `/build` | Is the target module in `.ystack/config.json`? Catches work outside any module's scope. |
 | `reference-not-dump` | Warn | During `/build` | Did the agent inline a full doc page into the plan instead of referencing it? |
+
+---
 
 ## Adding Rules When You Add Skills
 
@@ -100,17 +114,15 @@ Rules evolve with the project:
 
 1. **Start soft.** New rules ship as `warn`. Teams adopt the practice before it becomes enforced.
 2. **Promote to block.** Once the team is comfortable, flip severity to `block` for critical rules.
-3. **Project-specific rules.** Teams can add their own rules in `ystack.config.json`:
+3. **Project-specific rules.** Teams can add their own rules in `.ystack/config.json`:
 
 ```json
 {
   "linting": {
     "rules": {
       "plan-before-edit": "warn",
-      "spec-before-plan": "block",
       "verify-before-ship": "block",
       "docs-before-ship": "warn",
-      "cross-references": "warn",
       "custom-rules": [
         {
           "name": "security-review-for-auth",
@@ -137,53 +149,6 @@ Rules evolve with the project:
 }
 ```
 
-## Implementation
-
-Agent lint rules are thin hooks. Each rule is a single check that runs at a specific point in the workflow.
-
-### Hook Structure
-
-```javascript
-// hooks/agent-lint.js
-// PostToolUse hook — runs after every tool call
-
-export default function agentLint({ tool, input, output, config }) {
-  const rules = loadRules(config);
-  const violations = [];
-
-  for (const rule of rules) {
-    if (rule.shouldRun(tool, input)) {
-      const result = rule.check(tool, input, output);
-      if (result.violated) {
-        violations.push({
-          rule: rule.name,
-          severity: rule.severity,
-          message: result.message
-        });
-      }
-    }
-  }
-
-  // Warnings get surfaced as messages
-  // Blocks prevent the action
-  return formatViolations(violations);
-}
-```
-
-### What Rules Can Check
-
-Rules have access to:
-- **Tool name and input** — which tool was called and with what arguments
-- **File system** — read `.context/`, `ystack.config.json`, doc pages
-- **Beads state** — `bd show`, `bd ready` (via shell)
-- **Git state** — current diff, branch, recent commits
-
-Rules do NOT:
-- Modify files
-- Call external APIs
-- Block indefinitely
-- Access conversation history
-
 ## Code Linting vs. Agent Linting
 
 | | Code Linting | Agent Linting |
@@ -193,6 +158,6 @@ Rules do NOT:
 | **When** | Pre-commit hook | During agent execution |
 | **Grows with** | Language features | New skills and conventions |
 | **Examples** | "Use `const` not `let`" | "Read the spec before planning" |
-| **Configured in** | `biome.json` | `ystack.config.json` |
+| **Configured in** | `biome.json` | `.ystack/config.json` |
 
 Both run automatically. Code linting on commit, agent linting during workflow. Together they ensure both the code and the process that produced it meet the team's standards.

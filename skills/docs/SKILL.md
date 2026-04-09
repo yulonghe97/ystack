@@ -23,11 +23,13 @@ You update documentation to reflect completed, verified work. Docs describe what
 
 3. Read `.context/<feature-id>/PLAN.md` for the success criteria — these tell you what was built.
 
+4. **Read the progress file** — `.ystack/progress/<module>.md` for the affected module. Features marked `[x]` are completed and may need doc updates. Features still `[ ]` must NOT be documented. The progress file is the gate between implementation and documentation.
+
 ## Phase 1: Map Changes to Docs
 
 Identify which documentation pages are affected.
 
-1. **Read the module registry** (`ystack.config.json`) to find the module-to-doc mapping. Match changed file paths against module `scope` globs. If no registry exists, fall back to scanning `docs/src/content/_meta.ts`.
+1. **Read the module registry** (`.ystack/config.json`) to find the module-to-doc mapping. Match changed file paths against module `scope` globs. If no registry exists, fall back to scanning `docs/src/content/_meta.ts`.
 
 2. **Map changed code paths to doc pages:**
 
@@ -97,7 +99,7 @@ export default {
 }
 ```
 
-Check `ystack.config.json` `docs.framework` to know which format to use.
+Check `.ystack/config.json` `docs.framework` to know which format to use.
 
 ## Phase 4: Update Structural Files
 

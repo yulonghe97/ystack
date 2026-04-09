@@ -31,8 +31,8 @@ if (state.nudged) {
 	process.exit(0);
 }
 
-// Developer dismissed nudges
-if (existsSync(".context/.no-nudge")) {
+// Developer dismissed nudges or is in quick mode
+if (existsSync(".context/.no-nudge") || existsSync(".context/.quick")) {
 	process.exit(0);
 }
 
