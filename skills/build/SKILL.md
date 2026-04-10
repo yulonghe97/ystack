@@ -67,7 +67,9 @@ Read the relevant source code to understand the current implementation.
 
 1. **Identify code packages** from the module registry or `CLAUDE.md` Structure section.
 
-2. **Read key files** — focus on:
+2. **Read the package's `AGENTS.md`** (or `CLAUDE.md` if it exists) in the module's code directory. This gives you quick orientation — key files, conventions, and patterns specific to that package. If it doesn't exist, proceed without it.
+
+3. **Read key files** — focus on:
    - Schema files (database tables, types)
    - API routes (endpoints, request/response shapes)
    - Public interfaces (exported functions, tool definitions)

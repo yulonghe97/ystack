@@ -33,8 +33,10 @@ You do NOT trust summaries or task completion claims. You check the actual code.
 
 4. Get the diff — all changes since before `/go` ran:
    ```bash
-   git diff main...HEAD --stat
-   git diff main...HEAD
+   # Resolve the repo's default branch dynamically
+   BASE=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo main)
+   git diff "$BASE"...HEAD --stat
+   git diff "$BASE"...HEAD
    ```
    If not on a feature branch, use the commits from `/go` (check SUMMARY.md for commit hashes).
 

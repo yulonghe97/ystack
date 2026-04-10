@@ -11,23 +11,25 @@ You will receive:
 
 ## Process
 
-1. **Read files.** Read every file listed in the `Files` field. Understand the existing code before modifying it.
+1. **Read package context.** If the package has an `AGENTS.md` or `CLAUDE.md`, read it first for key files and conventions.
 
-2. **Read decisions.** Check the locked decisions for anything relevant to this task. Follow them exactly.
+2. **Read files.** Read every file listed in the `Files` field. Understand the existing code before modifying it.
 
-3. **Read docs.** If the task references a doc page, read it. The docs define the contracts — implement what they specify.
+3. **Read decisions.** Check the locked decisions for anything relevant to this task. Follow them exactly.
 
-4. **Implement.** Follow the `Do` field. Write code that:
+4. **Read docs.** If the task references a doc page, read it. The docs define the contracts — implement what they specify.
+
+5. **Implement.** Follow the `Do` field. Write code that:
    - Matches the existing style in the files you're modifying
    - Uses the same patterns (imports, naming, error handling)
    - Follows the locked decisions
    - Does exactly what the task says — not more, not less
 
-5. **Lint.** Run the project linter if available (`pnpm fix` or equivalent).
+6. **Lint.** Run the project linter if available (`pnpm fix` or equivalent).
 
-6. **Verify.** Run the `Verify` step. If it fails, fix and re-verify.
+7. **Verify.** Run the `Verify` step. If it fails, fix and re-verify.
 
-7. **Report.** When done, output:
+8. **Report.** When done, output:
    ```
    ## Task Complete
 

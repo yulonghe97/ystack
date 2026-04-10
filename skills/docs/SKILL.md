@@ -16,7 +16,9 @@ You update documentation to reflect completed, verified work. Docs describe what
 
 1. Get the diff to understand what code changed:
    ```bash
-   git diff main...HEAD --stat
+   # Resolve the repo's default branch dynamically
+   BASE=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo main)
+   git diff "$BASE"...HEAD --stat
    ```
 
 2. Read `.context/<feature-id>/DECISIONS.md` to understand the feature intent.
@@ -105,13 +107,50 @@ Check `.ystack/config.json` `docs.framework` to know which format to use.
 
 If the feature changed module responsibilities, dependencies, or structure, also update:
 
-1. **`CLAUDE.md`** — if the Structure section or Commands changed
-2. **`AGENTS.md`** — mirror CLAUDE.md changes
-3. **Package-level `CLAUDE.md`** — if a package's responsibilities changed
+1. **Root `CLAUDE.md`** — if the Structure section or Commands changed
+2. **Root `AGENTS.md`** — mirror CLAUDE.md changes
 
-Most features don't require structural file updates. Only update these if the module's role or boundaries shifted.
+Most features don't require root structural file updates. Only update these if the module's role or boundaries shifted.
 
-## Phase 5: Verify
+## Phase 5: Update Per-Package Context Files
+
+For each module whose code changed in the current diff, update its `AGENTS.md` (and `CLAUDE.md` if `.ystack/config.json` has `"runtime": "claude-code"`).
+
+If the file doesn't exist yet, create it. If it exists, update it.
+
+### What to include
+
+Read the package's actual code and populate:
+
+1. **Key Files** — list the important entry points with one-line descriptions:
+   ```markdown
+   ## Key Files
+
+   - `src/index.ts` — public API surface
+   - `src/schema.ts` — database schema (drizzle)
+   - `src/routes/payments.ts` — HTTP handlers
+   - `src/errors.ts` — domain error types
+   ```
+
+2. **Conventions** — patterns observed in the code, stated as rules:
+   ```markdown
+   ## Conventions
+
+   - All exports go through `src/index.ts`
+   - Error types defined in `src/errors.ts`, re-thrown at API boundary
+   - Tests colocated: `src/__tests__/<module>.test.ts`
+   - Zod schemas validate all external input
+   ```
+
+### Rules
+
+- **References, not explanations.** Point to files and state patterns. Don't explain what the code does — that's what the docs site is for.
+- **Max ~30 lines.** If it's longer, you're writing too much.
+- **Only update for changed modules.** Don't rewrite every package's context file on every run.
+- **No stale content.** If a file was renamed or removed, update the reference. If a convention changed, update the rule.
+- **CLAUDE.md mirrors AGENTS.md** unless there are Claude-specific hints to add (e.g., "use Agent tool for parallel execution in /go").
+
+## Phase 6: Verify
 
 1. Check that all cross-reference links point to existing pages:
    ```bash

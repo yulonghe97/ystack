@@ -31,8 +31,11 @@ If a PLAN.md exists, check whether all success criteria have been verified. If n
 Detect if code changes affect documented modules:
 
 ```bash
+# Resolve the repo's default branch dynamically
+BASE=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo main)
+
 # Get changed files
-git diff main...HEAD --stat
+git diff "$BASE"...HEAD --stat
 
 # Check if any changed packages map to doc pages
 # Read .ystack/config.json or scan docs structure
