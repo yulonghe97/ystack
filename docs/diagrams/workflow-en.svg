@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 310" width="900" height="310">
+  <defs>
+    <style>
+      .title { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 18px; font-weight: 600; fill: #0f172a; }
+      .subtitle { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10px; font-weight: 500; fill: #64748b; text-transform: uppercase; letter-spacing: 0.08em; }
+      .cmd { font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; font-weight: 500; fill: #ffffff; }
+      .num { font-family: 'Consolas', 'Monaco', monospace; font-size: 9px; fill: rgba(255,255,255,0.5); }
+      .action { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 12px; font-weight: 600; fill: #0f172a; }
+      .desc { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10px; fill: #64748b; }
+      .pipe-label { font-family: 'Consolas', 'Monaco', monospace; font-size: 9px; fill: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+      .quick-badge { font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; font-weight: 500; fill: #0f172a; }
+      .quick-desc { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 11px; fill: #64748b; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="310" fill="#f8fafc"/>
+
+  <!-- Canvas -->
+  <rect x="20" y="20" width="860" height="270" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Header -->
+  <text x="48" y="52" class="title">Development Workflow</text>
+  <text x="832" y="52" class="subtitle" text-anchor="end">Command Pipeline</text>
+  <line x1="48" y1="64" x2="852" y2="64" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Stage 1: /scaffold -->
+  <rect x="48" y="80" width="132" height="30" fill="#0f172a"/>
+  <text x="58" y="99" class="cmd">/scaffold</text>
+  <text x="170" y="99" class="num" text-anchor="end">01</text>
+  <rect x="48" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="58" y="130" class="action">Define</text>
+  <text x="58" y="146" class="desc">Scan or scaffold</text>
+  <text x="58" y="158" class="desc">module stubs, docs</text>
+  <text x="58" y="170" class="desc">&amp; progress files</text>
+
+  <!-- Stage 2: /build -->
+  <rect x="182" y="80" width="132" height="30" fill="#0f172a"/>
+  <text x="192" y="99" class="cmd">/build</text>
+  <text x="304" y="99" class="num" text-anchor="end">02</text>
+  <rect x="182" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="192" y="130" class="action">Plan</text>
+  <text x="192" y="146" class="desc">Read docs + code,</text>
+  <text x="192" y="158" class="desc">surface assumptions,</text>
+  <text x="192" y="170" class="desc">create plan</text>
+
+  <!-- Stage 3: /go -->
+  <rect x="316" y="80" width="132" height="30" fill="#0f172a"/>
+  <text x="326" y="99" class="cmd">/go</text>
+  <text x="438" y="99" class="num" text-anchor="end">03</text>
+  <rect x="316" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="326" y="130" class="action">Execute</text>
+  <text x="326" y="146" class="desc">Fresh subagent per</text>
+  <text x="326" y="158" class="desc">task, atomic commits</text>
+
+  <!-- Stage 4: /review -->
+  <rect x="450" y="80" width="132" height="30" fill="#0f172a"/>
+  <text x="460" y="99" class="cmd">/review</text>
+  <text x="572" y="99" class="num" text-anchor="end">04</text>
+  <rect x="450" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="460" y="130" class="action">Verify</text>
+  <text x="460" y="146" class="desc">Goal-backward check</text>
+  <text x="460" y="158" class="desc">against success</text>
+  <text x="460" y="170" class="desc">criteria</text>
+
+  <!-- Stage 5: /docs -->
+  <rect x="584" y="80" width="132" height="30" fill="#0f172a"/>
+  <text x="594" y="99" class="cmd">/docs</text>
+  <text x="706" y="99" class="num" text-anchor="end">05</text>
+  <rect x="584" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="594" y="130" class="action">Document</text>
+  <text x="594" y="146" class="desc">Update docs for</text>
+  <text x="594" y="158" class="desc">completed work only</text>
+
+  <!-- Stage 6: /pr -->
+  <rect x="718" y="80" width="132" height="30" fill="#0f172a"/>
+  <text x="728" y="99" class="cmd">/pr</text>
+  <text x="840" y="99" class="num" text-anchor="end">06</text>
+  <rect x="718" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="728" y="130" class="action">Ship</text>
+  <text x="728" y="146" class="desc">Verify, docs check,</text>
+  <text x="728" y="158" class="desc">create PR</text>
+
+  <!-- Pipeline label -->
+  <line x1="48" y1="200" x2="300" y2="200" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="450" y="203" class="pipe-label" text-anchor="middle">Sequential pipeline — each stage feeds the next</text>
+  <line x1="600" y1="200" x2="852" y2="200" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Quick path -->
+  <rect x="48" y="220" width="802" height="40" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 4"/>
+  <rect x="62" y="231" width="60" height="18" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="92" y="243" class="quick-badge" text-anchor="middle">/quick</text>
+  <text x="136" y="244" class="quick-desc">Fast path for bug fixes, chores, small changes — skips planning and progress tracking</text>
+</svg>

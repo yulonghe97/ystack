@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ystack 工作流</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --c-bg: #f8fafc;
+      --c-canvas: #ffffff;
+      --c-border: #cbd5e1;
+      --c-text-main: #0f172a;
+      --c-text-sub: #64748b;
+      --font-ui: 'Noto Sans SC', 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-ui);
+      background: var(--c-bg);
+      padding: 24px;
+    }
+    .diagram-container { max-width: 900px; margin: 0 auto; }
+    .diagram-canvas {
+      background: var(--c-canvas);
+      border: 1px solid var(--c-border);
+      padding: 28px;
+    }
+    .diagram-header {
+      border-bottom: 1px solid var(--c-border);
+      padding-bottom: 12px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .diagram-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--c-text-main);
+    }
+    .diagram-subtitle {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--c-text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .pipeline {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+
+    .stage {
+      flex: 1;
+      border: 1px solid var(--c-border);
+      display: flex;
+      flex-direction: column;
+    }
+    .stage + .stage { border-left: none; }
+
+    .stage-header {
+      background: var(--c-text-main);
+      color: var(--c-canvas);
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .stage-cmd {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .stage-num {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .stage-body {
+      padding: 14px 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .stage-action {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--c-text-main);
+    }
+
+    .stage-desc {
+      font-size: 11px;
+      color: var(--c-text-sub);
+      line-height: 1.5;
+    }
+
+    .arrow-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 0;
+    }
+    .arrow-line {
+      flex: 1;
+      height: 1px;
+      background: var(--c-border);
+    }
+    .arrow-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--c-text-sub);
+      padding: 0 12px;
+      letter-spacing: 0.05em;
+    }
+
+    .quick-path {
+      margin-top: 16px;
+      border: 1px dashed var(--c-border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .quick-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--c-text-main);
+      background: var(--c-bg);
+      padding: 3px 8px;
+      border: 1px solid var(--c-border);
+      white-space: nowrap;
+    }
+    .quick-desc {
+      font-size: 11px;
+      color: var(--c-text-sub);
+    }
+  </style>
+</head>
+<body>
+  <div class="diagram-container">
+    <div class="diagram-canvas">
+      <div class="diagram-header">
+        <div>
+          <div class="diagram-title">开发工作流</div>
+        </div>
+        <div class="diagram-subtitle">命令流水线</div>
+      </div>
+
+      <div class="pipeline">
+        <div class="stage">
+          <div class="stage-header">
+            <span class="stage-cmd">/scaffold</span>
+            <span class="stage-num">01</span>
+          </div>
+          <div class="stage-body">
+            <div class="stage-action">定义</div>
+            <div class="stage-desc">扫描或搭建模块骨架、文档与进度文件</div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-header">
+            <span class="stage-cmd">/build</span>
+            <span class="stage-num">02</span>
+          </div>
+          <div class="stage-body">
+            <div class="stage-action">规划</div>
+            <div class="stage-desc">读取文档与代码，暴露假设，生成计划</div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-header">
+            <span class="stage-cmd">/go</span>
+            <span class="stage-num">03</span>
+          </div>
+          <div class="stage-body">
+            <div class="stage-action">执行</div>
+            <div class="stage-desc">每个任务一个全新子Agent，原子提交</div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-header">
+            <span class="stage-cmd">/review</span>
+            <span class="stage-num">04</span>
+          </div>
+          <div class="stage-body">
+            <div class="stage-action">验证</div>
+            <div class="stage-desc">以目标为导向，对照成功标准逆向检查</div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-header">
+            <span class="stage-cmd">/docs</span>
+            <span class="stage-num">05</span>
+          </div>
+          <div class="stage-body">
+            <div class="stage-action">文档</div>
+            <div class="stage-desc">仅为已完成的工作更新文档</div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-header">
+            <span class="stage-cmd">/pr</span>
+            <span class="stage-num">06</span>
+          </div>
+          <div class="stage-body">
+            <div class="stage-action">发布</div>
+            <div class="stage-desc">验证、文档检查、创建 PR</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arrow-row">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">顺序流水线 — 每个阶段衔接下一个</div>
+        <div class="arrow-line"></div>
+      </div>
+
+      <div class="quick-path">
+        <span class="quick-badge">/quick</span>
+        <span class="quick-desc">快速通道：用于 bug 修复、杂务、小改动 — 跳过规划与进度追踪</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

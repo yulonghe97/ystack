@@ -14,6 +14,7 @@
 
 **An agent harness for doc-driven development** — with git-native progress tracking.
 
+**[English](./README.md)** | **[中文](./README.zh-CN.md)**
 
 ```bash
 # Interactive setup guide
@@ -34,20 +35,9 @@ Most AI agent setups have a dirty secret: the context they feed the agent is sep
 
 ystack makes your documentation site the single source of truth for both humans and agents.
 
-```
-  One doc page serves four roles:
-
-  ┌─────────────────────────────────────────────┐
-  │            docs/payments.mdx                │
-  │                                             │
-  │  → Spec the agent reads before coding       │
-  │  → Reference your team reads to understand  │
-  │  → Context a new dev uses to onboard        │
-  │  → Contract between modules at boundaries   │
-  │                                             │
-  │  You write it once. It serves all four.     │
-  └─────────────────────────────────────────────┘
-```
+<p align="center">
+  <img src="./docs/diagrams/concept-en.svg" alt="One Doc, Four Roles" width="720" />
+</p>
 
 **Hard rule: docs reflect only completed work.** No "planned", no "coming soon", no six-month-old TODOs. If it's in the docs, it's built, verified, and working. The gap between docs and reality is always zero.
 
@@ -61,22 +51,9 @@ See [PHILOSOPHY.md](./PHILOSOPHY.md) for the full design rationale.
 
 Three layers, connected by a module registry:
 
-```
-  ┌──────────────────────────────────────────────────────────┐
-  │                    .ystack/config.json                    │
-  │                     (Module Registry)                     │
-  ├──────────────────┬──────────────────┬────────────────────┤
-  │                  │                  │                    │
-  │   Docs (MDX)     │   Progress       │   Code             │
-  │   ━━━━━━━━━━     │   (.ystack/)     │   ━━━━             │
-  │   What it IS     │   ━━━━━━━━━━     │   The actual       │
-  │   Final specs    │   What's DONE    │   implementation   │
-  │   Design truth   │   What's LEFT    │   Lives here       │
-  │                  │   State layer    │                    │
-  │   agents read <──┼── tracks ───────>┼── agents write     │
-  │                  │                  │                    │
-  └──────────────────┴──────────────────┴────────────────────┘
-```
+<p align="center">
+  <img src="./docs/diagrams/architecture-en.svg" alt="Architecture Overview" width="820" />
+</p>
 
 Each module maps a doc page and code scope:
 
@@ -95,16 +72,9 @@ Each module maps a doc page and code scope:
 
 ## The Workflow
 
-```
-  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
-  │/scaffold │───>│  /build  │───>│   /go    │───>│ /review  │───>│  /docs   │───>│   /pr    │
-  │ or       │    │          │    │          │    │          │    │          │    │          │
-  │/import   │    │ Plan &   │    │ Execute  │    │ Verify   │    │ Update   │    │ Ship     │
-  │          │    │ confirm  │    │ tasks w/ │    │ against  │    │ docs for │    │ it       │
-  │ Scan or  │    │ with     │    │ fresh    │    │ success  │    │completed │    │          │
-  │ scaffold │    │ user     │    │subagents │    │ criteria │    │ work     │    │          │
-  └──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘
-```
+<p align="center">
+  <img src="./docs/diagrams/workflow-en.svg" alt="Development Workflow" width="900" />
+</p>
 
 ### Commands
 

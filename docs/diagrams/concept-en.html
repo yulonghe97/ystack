@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ystack — One Doc, Four Roles</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --c-bg: #f8fafc;
+      --c-canvas: #ffffff;
+      --c-border: #cbd5e1;
+      --c-text-main: #0f172a;
+      --c-text-sub: #64748b;
+      --font-ui: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-ui);
+      background: var(--c-bg);
+      padding: 24px;
+    }
+    .diagram-container { max-width: 720px; margin: 0 auto; }
+    .diagram-canvas {
+      background: var(--c-canvas);
+      border: 1px solid var(--c-border);
+      padding: 28px;
+    }
+    .diagram-header {
+      border-bottom: 1px solid var(--c-border);
+      padding-bottom: 12px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .diagram-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--c-text-main);
+    }
+    .diagram-subtitle {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--c-text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .center-doc {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .doc-block {
+      background: var(--c-text-main);
+      color: var(--c-canvas);
+      padding: 14px 28px;
+      text-align: center;
+    }
+    .doc-block-path {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .doc-block-label {
+      font-size: 10px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .roles-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      width: 100%;
+    }
+    .role {
+      border: 1px solid var(--c-border);
+      padding: 18px;
+    }
+    .role:nth-child(2) { border-left: none; }
+    .role:nth-child(3) { border-top: none; }
+    .role:nth-child(4) { border-left: none; border-top: none; }
+
+    .role-num {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--c-text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .role-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--c-text-main);
+      margin-bottom: 4px;
+    }
+    .role-who {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--c-text-sub);
+      margin-bottom: 6px;
+    }
+    .role-desc {
+      font-size: 11px;
+      color: var(--c-text-sub);
+      line-height: 1.5;
+    }
+
+    .connector-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      width: 100%;
+    }
+    .conn-line {
+      flex: 1;
+      height: 1px;
+      background: var(--c-border);
+    }
+    .conn-node {
+      width: 6px;
+      height: 6px;
+      border: 1px solid var(--c-border);
+      background: var(--c-canvas);
+      transform: rotate(45deg);
+    }
+
+    .rule-bar {
+      width: 100%;
+      border: 1px solid var(--c-border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .rule-icon {
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--c-text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--c-text-main);
+      flex-shrink: 0;
+    }
+    .rule-text {
+      font-size: 11px;
+      color: var(--c-text-sub);
+    }
+    .rule-text strong {
+      color: var(--c-text-main);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="diagram-container">
+    <div class="diagram-canvas">
+      <div class="diagram-header">
+        <div>
+          <div class="diagram-title">One Doc, Four Roles</div>
+        </div>
+        <div class="diagram-subtitle">Doc-Driven Development</div>
+      </div>
+
+      <div class="center-doc">
+        <div class="doc-block">
+          <div class="doc-block-path">docs/payments.mdx</div>
+          <div class="doc-block-label">Single Source of Truth</div>
+        </div>
+
+        <div class="connector-area">
+          <div class="conn-line"></div>
+          <div class="conn-node"></div>
+          <div class="conn-line"></div>
+          <div class="conn-node"></div>
+          <div class="conn-line"></div>
+          <div class="conn-node"></div>
+          <div class="conn-line"></div>
+          <div class="conn-node"></div>
+          <div class="conn-line"></div>
+        </div>
+
+        <div class="roles-grid">
+          <div class="role">
+            <div class="role-num">Role 01</div>
+            <div class="role-title">Agent Spec</div>
+            <div class="role-who">for: AI agents</div>
+            <div class="role-desc">The spec agents read before writing code. Accurate context, every time.</div>
+          </div>
+          <div class="role">
+            <div class="role-num">Role 02</div>
+            <div class="role-title">Team Reference</div>
+            <div class="role-who">for: your team</div>
+            <div class="role-desc">The reference your team reads to understand how the system works.</div>
+          </div>
+          <div class="role">
+            <div class="role-num">Role 03</div>
+            <div class="role-title">Onboarding Guide</div>
+            <div class="role-who">for: new developers</div>
+            <div class="role-desc">The context a new developer uses to get up to speed fast.</div>
+          </div>
+          <div class="role">
+            <div class="role-num">Role 04</div>
+            <div class="role-title">Module Contract</div>
+            <div class="role-who">for: boundaries</div>
+            <div class="role-desc">The contract between modules that defines how they connect.</div>
+          </div>
+        </div>
+
+        <div class="rule-bar">
+          <div class="rule-icon">!</div>
+          <div class="rule-text"><strong>Hard rule:</strong> Docs reflect only completed work. No "planned", no "coming soon". The gap between docs and reality is always zero.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

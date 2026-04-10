@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 410" width="720" height="410">
+  <defs>
+    <style>
+      .title { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 18px; font-weight: 600; fill: #0f172a; }
+      .subtitle { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10px; font-weight: 500; fill: #64748b; text-transform: uppercase; letter-spacing: 0.08em; }
+      .doc-path { font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; font-weight: 500; fill: #ffffff; }
+      .doc-label { font-size: 9px; fill: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
+      .role-num { font-family: 'Consolas', 'Monaco', monospace; font-size: 9px; fill: #64748b; text-transform: uppercase; letter-spacing: 0.08em; }
+      .role-title { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 13px; font-weight: 600; fill: #0f172a; }
+      .role-who { font-family: 'Consolas', 'Monaco', monospace; font-size: 10px; fill: #64748b; }
+      .role-desc { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10px; fill: #64748b; }
+      .rule-icon { font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; font-weight: 700; fill: #0f172a; }
+      .rule-bold { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 11px; font-weight: 600; fill: #0f172a; }
+      .rule-text { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 11px; fill: #64748b; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="720" height="410" fill="#f8fafc"/>
+
+  <!-- Canvas -->
+  <rect x="20" y="20" width="680" height="370" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Header -->
+  <text x="48" y="52" class="title">One Doc, Four Roles</text>
+  <text x="660" y="52" class="subtitle" text-anchor="end">Doc-Driven Development</text>
+  <line x1="48" y1="64" x2="672" y2="64" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Central doc block -->
+  <rect x="230" y="80" width="260" height="44" fill="#0f172a"/>
+  <text x="360" y="100" class="doc-path" text-anchor="middle">docs/payments.mdx</text>
+  <text x="360" y="116" class="doc-label" text-anchor="middle">Single Source of Truth</text>
+
+  <!-- Connector lines -->
+  <line x1="48" y1="140" x2="672" y2="140" stroke="#cbd5e1" stroke-width="1"/>
+  <rect x="196" y="137" width="6" height="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" transform="rotate(45 199 140)"/>
+  <rect x="336" y="137" width="6" height="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" transform="rotate(45 339 140)"/>
+  <rect x="476" y="137" width="6" height="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" transform="rotate(45 479 140)"/>
+
+  <!-- Role 1: Agent Spec -->
+  <rect x="48" y="156" width="312" height="94" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="62" y="174" class="role-num">ROLE 01</text>
+  <text x="62" y="192" class="role-title">Agent Spec</text>
+  <text x="62" y="206" class="role-who">for: AI agents</text>
+  <text x="62" y="224" class="role-desc">The spec agents read before writing code.</text>
+  <text x="62" y="238" class="role-desc">Accurate context, every time.</text>
+
+  <!-- Role 2: Team Reference -->
+  <rect x="359" y="156" width="312" height="94" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="373" y="174" class="role-num">ROLE 02</text>
+  <text x="373" y="192" class="role-title">Team Reference</text>
+  <text x="373" y="206" class="role-who">for: your team</text>
+  <text x="373" y="224" class="role-desc">The reference your team reads to understand</text>
+  <text x="373" y="238" class="role-desc">how the system works.</text>
+
+  <!-- Role 3: Onboarding Guide -->
+  <rect x="48" y="249" width="312" height="94" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="62" y="267" class="role-num">ROLE 03</text>
+  <text x="62" y="285" class="role-title">Onboarding Guide</text>
+  <text x="62" y="299" class="role-who">for: new developers</text>
+  <text x="62" y="317" class="role-desc">The context a new developer uses to get up</text>
+  <text x="62" y="331" class="role-desc">to speed fast.</text>
+
+  <!-- Role 4: Module Contract -->
+  <rect x="359" y="249" width="312" height="94" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="373" y="267" class="role-num">ROLE 04</text>
+  <text x="373" y="285" class="role-title">Module Contract</text>
+  <text x="373" y="299" class="role-who">for: boundaries</text>
+  <text x="373" y="317" class="role-desc">The contract between modules that defines</text>
+  <text x="373" y="331" class="role-desc">how they connect.</text>
+
+  <!-- Rule bar -->
+  <rect x="48" y="356" width="624" height="24" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <rect x="56" y="360" width="16" height="16" fill="none" stroke="#0f172a" stroke-width="1"/>
+  <text x="64" y="373" class="rule-icon" text-anchor="middle">!</text>
+  <text x="80" y="372" class="rule-bold">Hard rule:</text>
+  <text x="148" y="372" class="rule-text">Docs reflect only completed work. No "planned", no "coming soon". Gap = zero.</text>
+</svg>
