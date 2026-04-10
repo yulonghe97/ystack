@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ystack 架构概览</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --c-bg: #f8fafc;
+      --c-canvas: #ffffff;
+      --c-border: #cbd5e1;
+      --c-text-main: #0f172a;
+      --c-text-sub: #64748b;
+      --c-accent: #2563eb;
+      --font-ui: 'Noto Sans SC', 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-ui);
+      background: var(--c-bg);
+      padding: 24px;
+    }
+    .diagram-container { max-width: 820px; margin: 0 auto; }
+    .diagram-canvas {
+      background: var(--c-canvas);
+      border: 1px solid var(--c-border);
+      padding: 28px;
+    }
+    .diagram-header {
+      border-bottom: 1px solid var(--c-border);
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .diagram-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--c-text-main);
+    }
+    .diagram-subtitle {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--c-text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .registry-bar {
+      background: var(--c-text-main);
+      color: var(--c-canvas);
+      padding: 10px 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+    .registry-bar .badge {
+      font-size: 9px;
+      padding: 2px 6px;
+      border: 1px solid rgba(255,255,255,0.3);
+      color: rgba(255,255,255,0.7);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .layers {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+    }
+    .layer {
+      border: 1px solid var(--c-border);
+      padding: 20px;
+    }
+    .layer + .layer { border-left: none; }
+
+    .layer-icon {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--c-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .layer-icon svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--c-text-sub);
+      fill: none;
+      stroke-width: 1.5;
+    }
+
+    .layer-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--c-text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    .layer-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--c-text-main);
+      margin-bottom: 8px;
+    }
+    .layer-desc {
+      font-size: 12px;
+      color: var(--c-text-sub);
+      line-height: 1.5;
+    }
+    .layer-items {
+      margin-top: 12px;
+      border-top: 1px solid var(--c-border);
+      padding-top: 10px;
+    }
+    .layer-item {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--c-text-main);
+      padding: 3px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .layer-item::before {
+      content: '';
+      width: 4px;
+      height: 4px;
+      background: var(--c-border);
+      flex-shrink: 0;
+    }
+
+    .flow-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 0;
+      gap: 8px;
+    }
+    .flow-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--c-text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .flow-arrow {
+      color: var(--c-border);
+      font-size: 14px;
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid var(--c-border);
+      font-size: 11px;
+      color: var(--c-text-sub);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .footer-note code {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      background: var(--c-bg);
+      padding: 2px 5px;
+      border: 1px solid var(--c-border);
+    }
+  </style>
+</head>
+<body>
+  <div class="diagram-container">
+    <div class="diagram-canvas">
+      <div class="diagram-header">
+        <div>
+          <div class="diagram-title">架构概览</div>
+        </div>
+        <div class="diagram-subtitle">三层架构 + 模块注册表</div>
+      </div>
+
+      <div class="registry-bar">
+        <span>.ystack/config.json — 模块注册表</span>
+        <span class="badge">核心索引</span>
+      </div>
+
+      <div class="layers">
+        <div class="layer">
+          <div class="layer-icon">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+          </div>
+          <div class="layer-label">Layer 01</div>
+          <div class="layer-name">文档 (MDX)</div>
+          <div class="layer-desc">系统的最终状态。规格定义与设计真相。</div>
+          <div class="layer-items">
+            <div class="layer-item">Agent 读取</div>
+            <div class="layer-item">团队参考</div>
+            <div class="layer-item">无"计划中"</div>
+          </div>
+        </div>
+
+        <div class="layer">
+          <div class="layer-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+          </div>
+          <div class="layer-label">Layer 02</div>
+          <div class="layer-name">进度</div>
+          <div class="layer-desc">已完成与待完成。Git 原生的状态层。</div>
+          <div class="layer-items">
+            <div class="layer-item">.ystack/progress/</div>
+            <div class="layer-item">任务追踪</div>
+            <div class="layer-item">分支感知</div>
+          </div>
+        </div>
+
+        <div class="layer">
+          <div class="layer-icon">
+            <svg viewBox="0 0 24 24"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/></svg>
+          </div>
+          <div class="layer-label">Layer 03</div>
+          <div class="layer-name">代码</div>
+          <div class="layer-desc">实际实现。Agent 在此编写代码。</div>
+          <div class="layer-items">
+            <div class="layer-item">按模块划分</div>
+            <div class="layer-item">原子提交</div>
+            <div class="layer-item">验证输出</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-row">
+        <span class="flow-label">Agent 读取文档</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-label">进度追踪状态</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-label">Agent 编写代码</span>
+      </div>
+
+      <div class="footer-note">
+        每个模块通过
+        <code>config.json</code>
+        将一个文档页面映射到一个代码范围
+      </div>
+    </div>
+  </div>
+</body>
+</html>

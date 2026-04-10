@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 310" width="900" height="310">
+  <defs>
+    <style>
+      .title { font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Inter', system-ui, sans-serif; font-size: 18px; font-weight: 600; fill: #0f172a; }
+      .subtitle { font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Inter', system-ui, sans-serif; font-size: 10px; font-weight: 500; fill: #64748b; letter-spacing: 0.08em; }
+      .cmd { font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; font-weight: 500; fill: #ffffff; }
+      .num { font-family: 'Consolas', 'Monaco', monospace; font-size: 9px; fill: rgba(255,255,255,0.5); }
+      .action { font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Inter', system-ui, sans-serif; font-size: 12px; font-weight: 600; fill: #0f172a; }
+      .desc { font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Inter', system-ui, sans-serif; font-size: 10px; fill: #64748b; }
+      .pipe-label { font-family: 'PingFang SC', 'Consolas', 'Monaco', monospace; font-size: 9px; fill: #64748b; letter-spacing: 0.05em; }
+      .quick-badge { font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; font-weight: 500; fill: #0f172a; }
+      .quick-desc { font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Inter', system-ui, sans-serif; font-size: 11px; fill: #64748b; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="310" fill="#f8fafc"/>
+
+  <!-- Canvas -->
+  <rect x="20" y="20" width="860" height="270" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Header -->
+  <text x="48" y="52" class="title">开发工作流</text>
+  <text x="832" y="52" class="subtitle" text-anchor="end">命令流水线</text>
+  <line x1="48" y1="64" x2="852" y2="64" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Stage 1: /scaffold -->
+  <rect x="48" y="80" width="132" height="30" fill="#0f172a"/>
+  <text x="58" y="99" class="cmd">/scaffold</text>
+  <text x="170" y="99" class="num" text-anchor="end">01</text>
+  <rect x="48" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="58" y="130" class="action">定义</text>
+  <text x="58" y="146" class="desc">扫描或搭建模块</text>
+  <text x="58" y="158" class="desc">骨架、文档与</text>
+  <text x="58" y="170" class="desc">进度文件</text>
+
+  <!-- Stage 2: /build -->
+  <rect x="182" y="80" width="132" height="30" fill="#0f172a"/>
+  <text x="192" y="99" class="cmd">/build</text>
+  <text x="304" y="99" class="num" text-anchor="end">02</text>
+  <rect x="182" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="192" y="130" class="action">规划</text>
+  <text x="192" y="146" class="desc">读取文档与代码，</text>
+  <text x="192" y="158" class="desc">暴露假设，</text>
+  <text x="192" y="170" class="desc">生成计划</text>
+
+  <!-- Stage 3: /go -->
+  <rect x="316" y="80" width="132" height="30" fill="#0f172a"/>
+  <text x="326" y="99" class="cmd">/go</text>
+  <text x="438" y="99" class="num" text-anchor="end">03</text>
+  <rect x="316" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="326" y="130" class="action">执行</text>
+  <text x="326" y="146" class="desc">每个任务一个全新</text>
+  <text x="326" y="158" class="desc">子Agent，原子提交</text>
+
+  <!-- Stage 4: /review -->
+  <rect x="450" y="80" width="132" height="30" fill="#0f172a"/>
+  <text x="460" y="99" class="cmd">/review</text>
+  <text x="572" y="99" class="num" text-anchor="end">04</text>
+  <rect x="450" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="460" y="130" class="action">验证</text>
+  <text x="460" y="146" class="desc">以目标为导向，</text>
+  <text x="460" y="158" class="desc">对照成功标准</text>
+  <text x="460" y="170" class="desc">逆向检查</text>
+
+  <!-- Stage 5: /docs -->
+  <rect x="584" y="80" width="132" height="30" fill="#0f172a"/>
+  <text x="594" y="99" class="cmd">/docs</text>
+  <text x="706" y="99" class="num" text-anchor="end">05</text>
+  <rect x="584" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="594" y="130" class="action">文档</text>
+  <text x="594" y="146" class="desc">仅为已完成的</text>
+  <text x="594" y="158" class="desc">工作更新文档</text>
+
+  <!-- Stage 6: /pr -->
+  <rect x="718" y="80" width="132" height="30" fill="#0f172a"/>
+  <text x="728" y="99" class="cmd">/pr</text>
+  <text x="840" y="99" class="num" text-anchor="end">06</text>
+  <rect x="718" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="728" y="130" class="action">发布</text>
+  <text x="728" y="146" class="desc">验证、文档检查、</text>
+  <text x="728" y="158" class="desc">创建 PR</text>
+
+  <!-- Pipeline label -->
+  <line x1="48" y1="200" x2="310" y2="200" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="450" y="203" class="pipe-label" text-anchor="middle">顺序流水线 — 每个阶段衔接下一个</text>
+  <line x1="590" y1="200" x2="852" y2="200" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Quick path -->
+  <rect x="48" y="220" width="802" height="40" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 4"/>
+  <rect x="62" y="231" width="60" height="18" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="92" y="243" class="quick-badge" text-anchor="middle">/quick</text>
+  <text x="136" y="244" class="quick-desc">快速通道：用于 bug 修复、杂务、小改动 — 跳过规划与进度追踪</text>
+</svg>

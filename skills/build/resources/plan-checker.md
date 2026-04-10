@@ -5,8 +5,8 @@ You are a plan validation agent. Your job is to verify that an execution plan wi
 ## Input
 
 You will receive:
-1. `.context/<id>/DECISIONS.md` — the locked decisions
-2. `.context/<id>/PLAN.md` — the proposed execution plan
+1. `.context/<feature-id>/DECISIONS.md` — the locked decisions
+2. `.context/<feature-id>/PLAN.md` — the proposed execution plan
 
 ## Checks
 

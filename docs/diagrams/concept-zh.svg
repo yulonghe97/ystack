@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 410" width="720" height="410">
+  <defs>
+    <style>
+      .title { font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Inter', system-ui, sans-serif; font-size: 18px; font-weight: 600; fill: #0f172a; }
+      .subtitle { font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Inter', system-ui, sans-serif; font-size: 10px; font-weight: 500; fill: #64748b; letter-spacing: 0.08em; }
+      .doc-path { font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; font-weight: 500; fill: #ffffff; }
+      .doc-label { font-size: 9px; fill: rgba(255,255,255,0.5); letter-spacing: 0.05em; font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Inter', system-ui, sans-serif; }
+      .role-num { font-family: 'PingFang SC', 'Consolas', 'Monaco', monospace; font-size: 9px; fill: #64748b; letter-spacing: 0.08em; }
+      .role-title { font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Inter', system-ui, sans-serif; font-size: 13px; font-weight: 600; fill: #0f172a; }
+      .role-who { font-family: 'PingFang SC', 'Consolas', 'Monaco', monospace; font-size: 10px; fill: #64748b; }
+      .role-desc { font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Inter', system-ui, sans-serif; font-size: 10px; fill: #64748b; }
+      .rule-icon { font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; font-weight: 700; fill: #0f172a; }
+      .rule-bold { font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Inter', system-ui, sans-serif; font-size: 11px; font-weight: 600; fill: #0f172a; }
+      .rule-text { font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Inter', system-ui, sans-serif; font-size: 11px; fill: #64748b; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="720" height="410" fill="#f8fafc"/>
+
+  <!-- Canvas -->
+  <rect x="20" y="20" width="680" height="370" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Header -->
+  <text x="48" y="52" class="title">一份文档，四种角色</text>
+  <text x="660" y="52" class="subtitle" text-anchor="end">文档驱动开发</text>
+  <line x1="48" y1="64" x2="672" y2="64" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Central doc block -->
+  <rect x="230" y="80" width="260" height="44" fill="#0f172a"/>
+  <text x="360" y="100" class="doc-path" text-anchor="middle">docs/payments.mdx</text>
+  <text x="360" y="116" class="doc-label" text-anchor="middle">唯一事实来源</text>
+
+  <!-- Connector lines -->
+  <line x1="48" y1="140" x2="672" y2="140" stroke="#cbd5e1" stroke-width="1"/>
+  <rect x="196" y="137" width="6" height="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" transform="rotate(45 199 140)"/>
+  <rect x="336" y="137" width="6" height="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" transform="rotate(45 339 140)"/>
+  <rect x="476" y="137" width="6" height="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" transform="rotate(45 479 140)"/>
+
+  <!-- Role 1 -->
+  <rect x="48" y="156" width="312" height="94" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="62" y="174" class="role-num">角色 01</text>
+  <text x="62" y="192" class="role-title">Agent 规格</text>
+  <text x="62" y="206" class="role-who">面向：AI Agent</text>
+  <text x="62" y="224" class="role-desc">Agent 编写代码前阅读的规格说明。</text>
+  <text x="62" y="238" class="role-desc">每次都能获得准确的上下文。</text>
+
+  <!-- Role 2 -->
+  <rect x="359" y="156" width="312" height="94" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="373" y="174" class="role-num">角色 02</text>
+  <text x="373" y="192" class="role-title">团队参考</text>
+  <text x="373" y="206" class="role-who">面向：你的团队</text>
+  <text x="373" y="224" class="role-desc">团队了解系统运作方式的参考文档。</text>
+
+  <!-- Role 3 -->
+  <rect x="48" y="249" width="312" height="94" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="62" y="267" class="role-num">角色 03</text>
+  <text x="62" y="285" class="role-title">新人指南</text>
+  <text x="62" y="299" class="role-who">面向：新开发者</text>
+  <text x="62" y="317" class="role-desc">新开发者快速上手所需的全部上下文。</text>
+
+  <!-- Role 4 -->
+  <rect x="359" y="249" width="312" height="94" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="373" y="267" class="role-num">角色 04</text>
+  <text x="373" y="285" class="role-title">模块契约</text>
+  <text x="373" y="299" class="role-who">面向：边界定义</text>
+  <text x="373" y="317" class="role-desc">定义模块之间如何连接的契约。</text>
+
+  <!-- Rule bar -->
+  <rect x="48" y="356" width="624" height="24" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <rect x="56" y="360" width="16" height="16" fill="none" stroke="#0f172a" stroke-width="1"/>
+  <text x="64" y="373" class="rule-icon" text-anchor="middle">!</text>
+  <text x="80" y="372" class="rule-bold">硬性规则：</text>
+  <text x="155" y="372" class="rule-text">文档仅反映已完成的工作。没有"计划中"，没有"即将推出"。差距永远为零。</text>
+</svg>

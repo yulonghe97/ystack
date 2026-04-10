@@ -75,7 +75,7 @@ Read the relevant source code to understand the current implementation.
    - Public interfaces (exported functions, tool definitions)
    - Existing tests (what's already tested)
 
-3. **Do NOT read everything.** Read only what's relevant to the feature. Use the docs to guide which code matters — if the docs say "Payments uses Stripe Customer Balance", read the Stripe integration code, not the entire payments package.
+4. **Do NOT read everything.** Read only what's relevant to the feature. Use the docs to guide which code matters — if the docs say "Payments uses Stripe Customer Balance", read the Stripe integration code, not the entire payments package.
 
 ## Phase 3: Surface Assumptions
 
