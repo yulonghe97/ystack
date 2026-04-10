@@ -397,7 +397,41 @@ payments/stripe → payments/wallet → dashboard/usage
 - payments/stripe (no dependencies)
 ```
 
-## Phase 6: Present the Result
+## Phase 6: Generate Per-Package Context Files
+
+Create an `AGENTS.md` in each module's code directory (e.g., `packages/auth/AGENTS.md`, `apps/api/AGENTS.md`). If `.ystack/config.json` has `"runtime": "claude-code"`, also create a `CLAUDE.md` alongside it.
+
+These files are **stubs** at scaffold time — real references get filled in by `/docs` after code exists.
+
+### Template
+
+```markdown
+# <Module Name>
+
+<one-sentence purpose from the plan>
+
+## Key Files
+
+_Populated after implementation._
+
+## Conventions
+
+- Follow patterns established in this package
+- See project root AGENTS.md for workflow
+```
+
+### Rules
+
+- One file per module, placed in the module's code root (not in docs/)
+- `CLAUDE.md` mirrors `AGENTS.md` content — only generate it when runtime is `claude-code`
+- Keep the stub minimal — `/docs` will rewrite it with real file references later
+- If the code directory doesn't exist yet, skip — the file gets created when the package is set up
+
+### Single-module mode
+
+When adding a single module, also create its `AGENTS.md` (and `CLAUDE.md` if applicable) following the same template.
+
+## Phase 7: Present the Result
 
 Show the user what was generated:
 
@@ -417,6 +451,9 @@ Show the user what was generated:
 
 ### Module Registry
   .ystack/config.json — 6 modules registered
+
+### Context Files
+  AGENTS.md created in each module directory
 
 ### Progress
   6 progress files created, 15 features tracked
@@ -528,7 +565,11 @@ Write `.ystack/progress/<module-slug>.md`:
 Add dependencies to existing module features where connections exist.
 Update `.ystack/progress/_overview.md` to include the new module.
 
-### Step 6: Present Summary
+### Step 6: Create Per-Package Context Files
+
+Create `AGENTS.md` (and `CLAUDE.md` if `runtime` is `claude-code` in `.ystack/config.json`) in the module's code directory using the stub template from Phase 6 above.
+
+### Step 7: Present Summary
 
 ```
 ## Module Added: <Module Name>

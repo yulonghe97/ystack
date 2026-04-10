@@ -379,6 +379,7 @@ async function cmdInit() {
 		const monorepo = detectMonorepo();
 		const config = {
 			project: projectName,
+			runtime,
 			docs: {
 				root: docsRoot,
 				framework: docsFramework === "none" ? null : docsFramework,
@@ -613,6 +614,7 @@ async function cmdCreate() {
 	const docsRoot = docsFramework === "fumadocs" ? "content/docs" : "docs/src/content";
 	const ystackConfig = {
 		project: name,
+		runtime: "claude-code",
 		docs: {
 			root: docsRoot,
 			framework: docsFramework,
@@ -706,6 +708,28 @@ Modules are defined in \`.ystack/config.json\`. Each module maps code directorie
 `;
 	writeFileSync(join(projectDir, "AGENTS.md"), agentsMd);
 	console.log(green("  ✓ AGENTS.md"));
+
+	// Per-directory AGENTS.md starters
+	const dirAgentsMd = (dir) => `# ${dir}/
+
+Each package in this directory should have its own AGENTS.md describing:
+
+## Key Files
+
+- Entry point and public API surface
+- Schema or data model files
+- Route handlers or core logic
+
+## Conventions
+
+- Patterns specific to this package (naming, error handling, testing)
+- References to relevant standards or libraries
+
+Keep it short — pointers to code, not explanations of code.
+`;
+	writeFileSync(join(projectDir, "apps/AGENTS.md"), dirAgentsMd("apps"));
+	writeFileSync(join(projectDir, "packages/AGENTS.md"), dirAgentsMd("packages"));
+	console.log(green("  ✓ apps/AGENTS.md, packages/AGENTS.md"));
 
 	// .gitignore
 	const gitignore = `node_modules/

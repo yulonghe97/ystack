@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.2.4 — 2026-04-10
+
+### Added
+
+- Per-package `AGENTS.md` context files — each module gets a lightweight reference file with key files and conventions
+- `CLAUDE.md` per-package files generated only when runtime is `claude-code`
+- Runtime persisted in `.ystack/config.json` so skills can adapt behavior
+- `/scaffold` Phase 6: generates context file stubs per module
+- `/docs` Phase 5: updates per-package context files with real code references after implementation
+- `/build` reads per-package `AGENTS.md` for quick orientation before diving into code
+- Executor agent reads package context before implementing tasks
+- `ystack create` generates starter `AGENTS.md` in `apps/` and `packages/` directories
+
+---
+
+## 0.2.3 — 2026-04-09
+
+### Fixed
+
+- `/review`, `/pr`, `/docs` skills: resolve base branch dynamically via `git symbolic-ref` instead of hardcoding `main` — repos with `master`, `develop`, or other default branches now work correctly
+
+---
+
 ## 0.2.2 — 2026-04-09
 
 ### Fixed
