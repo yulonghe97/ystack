@@ -1,13 +1,7 @@
-# ystack
-
-```
-                 _             _
-  _   _ ___| |_ __ _  ___| | __
- | | | / __| __/ _` |/ __| |/ /
- | |_| \__ \ || (_| | (__|   <
-  \__, |___/\__\__,_|\___|_|\_\
-  |___/
-```
+<!-- logo -->
+<p align="center">
+  <img src="./public/logo.svg" alt="ystack logo" width="380" style="vertical-align:middle;"/>
+</p>
 
 [![npm version](https://img.shields.io/npm/v/ystack)](https://www.npmjs.com/package/ystack)
 [![license](https://img.shields.io/npm/l/ystack)](./LICENSE)

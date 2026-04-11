@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 140" width="340" height="140">
+  <!-- Dark Background (Black) -->
+  <rect width="340" height="140" rx="16" fill="#09090B" />
+
+  <!-- Vector Logo (Left) -->
+  <g transform="translate(25, 0)">
+    <!-- Left Bracket -->
+    <path d="M 25 24 L 10 24 L 10 116 L 25 116" stroke="#FFFFFF" stroke-width="6" fill="none" stroke-linejoin="miter" stroke-linecap="round" />
+    
+    <!-- Vector Values (Gray) -->
+    <text x="45" y="44" text-anchor="middle" font-family="'Fira Code', 'JetBrains Mono', 'Menlo', monospace" font-size="14" font-weight="500" fill="#52525B">0.19</text>
+    
+    <circle cx="45" cy="58" r="1.5" fill="#52525B" />
+    <circle cx="45" cy="66" r="1.5" fill="#52525B" />
+    <circle cx="45" cy="74" r="1.5" fill="#52525B" />
+
+    <text x="45" y="94" text-anchor="middle" font-family="'Fira Code', 'JetBrains Mono', 'Menlo', monospace" font-size="14" font-weight="500" fill="#A1A1AA">0.97</text>
+    
+    <!-- Target Variable 'y' (White) -->
+    <text x="45" y="118" text-anchor="middle" font-family="'Fira Code', 'JetBrains Mono', 'Menlo', monospace" font-size="26" font-weight="800" fill="#FFFFFF" font-style="italic">y</text>
+
+    <!-- Right Bracket -->
+    <path d="M 65 24 L 80 24 L 80 116 L 65 116" stroke="#FFFFFF" stroke-width="6" fill="none" stroke-linejoin="miter" stroke-linecap="round" />
+  </g>
+
+  <!-- Logotype 'stack' (Right) -->
+  <text x="135" y="92" font-family="'Fira Code', 'JetBrains Mono', 'Menlo', monospace" font-size="64" font-weight="800" letter-spacing="-0.04em" fill="#FFFFFF">stack</text>
+</svg>
