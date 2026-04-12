@@ -50,6 +50,14 @@ function commandExists(cmd) {
 	}
 }
 
+function getPackageManagerVersion(pm) {
+	try {
+		return execSync(`${pm} --version`, { encoding: "utf-8" }).trim();
+	} catch {
+		return null;
+	}
+}
+
 function detectProjectName() {
 	// Try package.json
 	if (existsSync("package.json")) {
@@ -539,10 +547,24 @@ async function cmdCreate() {
 
 	p.intro(`ystack create — scaffolding ${name}`);
 
+	// --- Package manager ---
+	const availablePMs = ["pnpm", "npm", "yarn", "bun"].filter(commandExists);
+	let pm;
+	if (availablePMs.length === 1) {
+		pm = availablePMs[0];
+	} else {
+		pm = handleCancel(await p.select({
+			message: "Which package manager?",
+			options: availablePMs.map((name) => ({ value: name, label: name })),
+		}));
+	}
+	const pmVersion = getPackageManagerVersion(pm);
+	const packageManager = pmVersion ? `${pm}@${pmVersion}` : pm;
+
 	// --- Copy templates ---
 	const templatesDir = join(YSTACK_ROOT, "templates");
 	const docsRoot = docsFramework === "fumadocs" ? "content/docs" : "docs/src/content";
-	const vars = { name, docsRoot, docsFramework };
+	const vars = { name, docsRoot, docsFramework, packageManager, pm };
 
 	// Ensure required directories exist (for skills + context)
 	mkdirSync(join(projectDir, ".claude/skills"), { recursive: true });
@@ -550,6 +572,19 @@ async function cmdCreate() {
 
 	console.log(bold("Generating project files..."));
 	copyTemplateDir(join(templatesDir, "base"), projectDir, vars);
+
+	// Workspace config varies by package manager
+	const workspaces = ["apps/*", "packages/*", "docs"];
+	if (pm === "pnpm") {
+		writeFileSync(join(projectDir, "pnpm-workspace.yaml"), `packages:\n${workspaces.map((w) => `  - "${w}"`).join("\n")}\n`);
+	} else {
+		// npm, yarn, bun use workspaces field in package.json
+		const pkgPath = join(projectDir, "package.json");
+		const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+		pkg.workspaces = workspaces;
+		writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
+	}
+
 	console.log(green("  ✓ base config (package.json, turbo.json, tsconfig, CLAUDE.md, AGENTS.md, ...)"));
 
 	console.log(bold("Setting up docs app..."));
@@ -579,7 +614,7 @@ async function cmdCreate() {
 	// --- Summary ---
 	p.note(
 		[
-			`Monorepo:   Turborepo + pnpm workspaces`,
+			`Monorepo:   Turborepo + ${pm} workspaces`,
 			`Linting:    Ultracite (Biome)`,
 			`Docs:       ${docsFramework === "nextra" ? "Nextra 4" : "Fumadocs"}`,
 			`TypeScript: Strict mode, ES2022`,
@@ -592,8 +627,8 @@ async function cmdCreate() {
 	p.note(
 		[
 			`cd ${name}`,
-			"pnpm install",
-			"pnpm dev",
+			`${pm} install`,
+			`${pm} dev`,
 		].join("\n"),
 		"Next steps",
 	);
