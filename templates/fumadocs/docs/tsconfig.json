@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "outDir": "dist",
+    "noEmit": true
+  },
+  "include": [
+    "src",
+    "next.config.ts",
+    "next-env.d.ts",
+    "content"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next"
+  ]
+}

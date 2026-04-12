@@ -1,0 +1,33 @@
+# {{name}}
+
+This project uses [ystack](https://github.com/yulonghe97/ystack) for doc-driven development.
+
+## Structure
+
+- `apps/` — Application packages
+- `packages/` — Shared library packages
+- `docs/` — Documentation site ({{docsFramework}})
+
+## Module Registry
+
+Modules are defined in `.ystack/config.json`. Each module maps code directories to documentation pages.
+
+## Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `/import` | Scan codebase and populate module registry |
+| `/build <feature>` | Plan a feature (reads docs + code, surfaces assumptions) |
+| `/go` | Execute the plan with fresh subagents |
+| `/review` | Code review + goal-backward verification |
+| `/docs` | Update documentation for completed work |
+| `/pr` | Verify, docs check, create PR |
+
+## Scripts
+
+- `pnpm dev` — Start dev servers
+- `pnpm build` — Build all packages
+- `pnpm typecheck` — Type-check all packages
+- `pnpm check` — Lint (ultracite/biome)
+- `pnpm fix` — Auto-fix lint issues
+- `pnpm clean` — Clean build artifacts
