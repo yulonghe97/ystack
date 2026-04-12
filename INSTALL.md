@@ -4,15 +4,20 @@
 
 ## Install
 
-Both paths are one-liners that install skills and hooks:
-
 ```bash
-# New project
-npx ystack create my-app && cd my-app
+# Option A: skills only (via skills.sh)
+npx skills add yulonghe97/ystack
 
-# Existing project
+# Option B: skills + agent linting hooks
 cd your-project && npx ystack init
+
+# Option C: new project from scratch
+npx ystack create my-app && cd my-app
 ```
+
+**Option A** installs just the skills — good if you want the workflow without the hooks.
+
+**Options B and C** also install [agent linting hooks](./LINTING.md) that enforce the doc-driven workflow (read spec before coding, plan before executing, verify before shipping).
 
 Then open your coding agent and run `/create` to finish setup.
 

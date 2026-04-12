@@ -11,12 +11,14 @@
 **[English](./README.md)** | **[中文](./README.zh-CN.md)**
 
 ```bash
-# New project
-npx ystack create my-app
-cd my-app
+# Skills only (via skills.sh)
+npx skills add yulonghe97/ystack
 
-# Existing project
-cd your-project && npx ystack init
+# Full install — skills + agent linting hooks
+npx ystack init
+
+# New project from scratch
+npx ystack create my-app && cd my-app
 
 # Then run /create in your coding agent to set up the project
 ```
@@ -89,21 +91,22 @@ Each module maps a doc page and code scope:
 
 ## Getting Started
 
-### New project
+### Install
 
 ```bash
-npx ystack create my-app
-cd my-app
+# Option A: skills only (via skills.sh)
+npx skills add yulonghe97/ystack
+
+# Option B: skills + agent linting hooks
+cd your-project && npx ystack init
+
+# Option C: new project from scratch
+npx ystack create my-app && cd my-app
 ```
 
-### Existing project
+Option A installs just the skills. Options B and C also install [agent linting hooks](./LINTING.md) that enforce the doc-driven workflow (read spec before coding, plan before executing, verify before shipping).
 
-```bash
-cd your-project
-npx ystack init
-```
-
-Both commands install skills and hooks. Then run `/create` in your coding agent to finish setup — it recommends a default stack (Turborepo + pnpm + TypeScript + Ultracite + Nextra) but adapts to whatever you prefer.
+Then run `/create` in your coding agent to set up the project — it recommends a default stack (Turborepo + pnpm + TypeScript + Ultracite + Nextra) but adapts to whatever you prefer.
 
 See [INSTALL.md](./INSTALL.md) for full setup options and configuration.
 
