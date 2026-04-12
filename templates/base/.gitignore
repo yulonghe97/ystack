@@ -1,8 +1,0 @@
-node_modules/
-dist/
-.turbo/
-.next/
-.context/
-.env
-.env.local
-*.tsbuildinfo
