@@ -205,6 +205,59 @@ What must be TRUE in the codebase when this feature is done. Each criterion is i
 
 7. **Reference the docs.** If a task implements something described in the docs (a contract, a data model, an API shape), reference the doc page so the executor can read it.
 
+## Phase 5.5: Generate QA Plan
+
+After creating PLAN.md, generate a QA plan that defines how to verify the feature works.
+
+Create:
+```
+.context/<feature-id>/QA.md
+```
+
+**QA.md format:**
+
+```markdown
+# QA: <Feature Name>
+
+## CI Checks
+Commands the agent MUST run and pass:
+- [ ] `pnpm typecheck` — full monorepo type check
+- [ ] `pnpm check` — lint (Biome via Ultracite)
+- [ ] `pnpm build` — full production build
+
+## Automated Verifications
+Checks the agent can run without a browser:
+- [ ] [Derived from success criteria — translate each criterion into a runnable check]
+- [ ] [e.g., "`pnpm test --filter @acme/payments` passes"]
+- [ ] [e.g., "grep for `refundReason` in `packages/db/src/schema.ts` returns a match"]
+
+## Manual Verifications
+Things a human must check (agent cannot verify without browser tooling):
+- [ ] [UI checks — e.g., "Admin dashboard renders RefundReasonBadge with correct colors"]
+- [ ] [Flow checks — e.g., "Login → navigate to settings → change password works"]
+
+## Environment
+- Services needed: [e.g., API server (`pnpm dev:api`)]
+- Migrations: [e.g., "Needs `refund_reason` column migrated"]
+- Env vars: [e.g., "None new"]
+
+## Suggested Tests
+Tests worth writing to prevent regression (agent writes these during /qa):
+- [file path and test case descriptions]
+```
+
+**Rules for QA.md:**
+
+1. **CI Checks are standard.** Always include typecheck, lint, and build unless the project uses different tooling. Read `package.json` to confirm command names.
+
+2. **Automated Verifications come from success criteria.** Each criterion in PLAN.md should map to at least one automated verification. If a criterion can't be checked automatically (needs a browser), put it in Manual.
+
+3. **Be honest about Manual items.** Don't pretend the agent can verify UI rendering. If it needs eyes, say so.
+
+4. **Suggested Tests are specific.** Include file paths and test case descriptions. The `/qa` agent will write these if they don't exist.
+
+5. **Environment section prevents wasted cycles.** If the feature needs a running database or specific env vars, say so upfront — the `/qa` agent shouldn't discover this by failing.
+
 ## Phase 6: Plan Check
 
 Before presenting the plan to the user, self-check:
