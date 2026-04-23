@@ -1,429 +1,318 @@
 ---
 name: qa
 description: >
-  Systematically QA test the implementation: run CI checks, use browser automation
-  to test affected pages, fix bugs with atomic commits, re-verify, and generate
-  regression tests. Inspired by gstack's QA methodology. Use this skill when the
-  user says 'qa', '/qa', 'test it', 'run qa', 'check if it works', 'does it build',
-  'run the checks', or after /go completes. Runs between /go and /review.
-  Optionally accepts a URL: '/qa http://localhost:3000'.
-user-invocable: true
+  Plan-driven QA testing with agentic self-testing as first-class, automated tests next,
+  browser testing last (and optional). Develops a QA plan covering project standards
+  compliance + feature completeness, spawns parallel sub-agents to execute it, reports
+  issues to QA-REPORT.md, then runs a bug-fixing loop until all issues close.
+  Use this skill when the user says 'qa', '/qa', 'test it', 'run qa', 'check if it
+  works', 'does it build', 'run the checks', or after /go completes. Runs between
+  /go and /review. Optionally accepts a URL for frontend features: '/qa http://localhost:3000'.
+compatibility: Designed for Claude Code. Playwright MCP is optional (frontend only).
+metadata:
+  user-invocable: "true"
 ---
 
-# /qa — QA Testing + Bug Fixing
+# /qa — Plan-Driven QA with Bug-Fix Loop
 
-You are the QA phase of the ystack agent harness. You systematically test the implementation, find bugs, fix them with atomic commits, and re-verify.
+You are the QA phase of the ystack agent harness. You produce a QA plan, execute it with parallel sub-agents, report issues, and loop on fixes until everything passes.
 
-**You verify runtime correctness.** `/review` handles code quality. These are separate concerns.
+**You verify runtime correctness and standards compliance.** `/review` handles code quality. These are separate concerns.
 
-## Phase 0: Initialize
+**Agentic self-testing is first-class.** Use the CLI, curl, node/python scripts, and file inspection before reaching for browser automation. Browser automation (Playwright) is optional, and only used for frontend features when the dev server is actually reachable.
 
-### Step 1: Detect browser tooling
+**Reference files** (read as needed — don't load upfront):
+- `references/qa-plan-template.md` — full QA.md template
+- `references/qa-report-template.md` — full QA-REPORT.md template + status rules
+- `references/subagent-prompts.md` — prompts for standards/test-writing/browser/bug-fix sub-agents
 
-Check if Playwright MCP browser tools are available by looking for these tools in your environment:
+---
 
+## Phase 0: Context Discovery
+
+### Step 1: Find the work to QA
+
+1. Check for an active feature plan:
+   ```bash
+   ls .context/*/PLAN.md 2>/dev/null
+   ```
+2. If multiple features exist, ask which one to QA.
+3. If no PLAN.md exists, figure out what's on this branch:
+   ```bash
+   BASE=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo main)
+   git log "$BASE"..HEAD --oneline
+   git diff --name-only "$BASE"...HEAD
+   git diff "$BASE"...HEAD --stat
+   ```
+4. If the branch purpose is unclear from commits, **ask the user**:
+   > I don't see a PLAN.md. What is this branch trying to accomplish?
+   > Please describe the feature or share success criteria so I can build a QA plan.
+
+### Step 1b: Cross-check the user's claim against the branch
+
+If the user's invocation references a specific feature (e.g., "test it — I just finished the auth login page"), before you start building a plan, **verify the feature actually exists on the branch**. Users sometimes switch workspaces, forget to push, or describe work that lives elsewhere. Catching this now saves a whole round of fabricated QA.
+
+1. Extract the key nouns from the user's message (e.g., "auth", "login", "checkout", "profile page").
+2. Check the diff:
+   ```bash
+   git diff --name-only "$BASE"...HEAD | grep -iE '<keyword1>|<keyword2>'
+   git log "$BASE"..HEAD --oneline | grep -iE '<keyword1>|<keyword2>'
+   ```
+3. If nothing matches, surface the mismatch to the user:
+   > Your message mentions **<feature>**, but I don't see related changes on this branch:
+   > - Changed files (<N>): none match `<keywords>`
+   > - Recent commits: <one-line subjects>
+   >
+   > A few possibilities — which is it?
+   > 1. Wrong branch / wrong workspace
+   > 2. Uncommitted work elsewhere I should wait for
+   > 3. You meant a different feature
+   > 4. You want me to test the changes that ARE on this branch (listed above)
+
+Do NOT fabricate success criteria for a feature you can't locate.
+
+### Step 2: Load project standards
+
+Read the files that define what "correct" looks like in this project:
+
+- `CLAUDE.md` (root) — agent instructions / project conventions
+- `AGENTS.md` (root) — shared conventions
+- `<module>/AGENTS.md` / `<module>/CLAUDE.md` — per-module rules for changed modules
+- `docs/` — conventions pages (logging, error handling, API patterns)
+- `.ystack/config.json` — module boundaries (if present)
+
+If none of these exist, fall back to any top-level convention docs the repo provides (e.g., `PHILOSOPHY.md`, `CONTRIBUTING.md`, `LINTING.md`). Note which sources you used in the plan.
+
+Extract:
+- **Conventions** (naming, imports, file organization)
+- **Logging patterns**
+- **Testing patterns** (framework, file naming, fixture location)
+- **Documentation requirements**
+
+### Step 3: Detect the actual CI commands
+
+Do NOT assume `pnpm typecheck && pnpm check && pnpm build` exists. Detect what the project actually has:
+
+```bash
+# Node-ish repos
+cat package.json | python3 -c 'import json,sys; d=json.load(sys.stdin); print("\n".join(d.get("scripts",{})))'
+# Go
+[ -f go.mod ] && echo "go"
+# Python
+[ -f pyproject.toml ] || [ -f setup.py ] && echo "python"
+```
+
+Map what you find to the four CI categories:
+
+| Category | Node | Go | Python |
+|---|---|---|---|
+| Typecheck | `tsc`, `typecheck`, `check:types` | `go vet ./...` | `mypy .` |
+| Lint | `lint`, `check`, `eslint`, `biome` | `gofmt -l .` | `ruff check` |
+| Build | `build`, `compile` | `go build ./...` | — |
+| Test | `test`, `vitest`, `jest` | `go test ./...` | `pytest` |
+
+If a category has no matching command, mark it **N/A — no command detected** in the QA plan. Do not invent one. If zero categories match (e.g., a docs-only repo), say so explicitly:
+
+> No build/test infrastructure detected (no package.json scripts, no go.mod, no pyproject.toml). Skipping Group A (CI gauntlet). Focus will be standards compliance, doc linking, and structural checks.
+
+### Step 4: Classify the feature type
+
+From the diff and PLAN.md (or inferred scope), determine:
+
+- **Backend-only** — API routes, server actions, DB schema, CLI changes → no browser needed
+- **Frontend-only** — pages, components, client-side logic → browser relevant if Playwright available
+- **Fullstack** — both → test backend agentically + frontend via browser (if available)
+- **Infrastructure / Docs-only** — configs, CI, tooling, markdown → mostly CLI verification, no browser
+
+Tell the user:
+> Feature type detected: **<type>**. CI commands detected: **<list or "none">**. Browser automation will be **<used | skipped>**.
+
+### Step 5: Check Playwright availability (frontend only)
+
+If the feature is frontend or fullstack, check whether Playwright MCP is loaded:
 ```
 browser_navigate, browser_snapshot, browser_click, browser_take_screenshot
 ```
 
-If these tools exist, browser-based QA is available (Tiers 1-3). If not, only CI and code-level checks run (Tiers 1-2).
+- If available: browser testing will be included.
+- If not available AND feature is frontend: list browser checks as manual items in the plan. Tell the user how to enable:
+  > Feature is frontend but Playwright MCP isn't loaded. Browser checks will be listed as manual. To enable:
+  > `claude mcp add --scope project playwright -- npx @playwright/mcp@latest --headless`
 
-**Tell the user what mode you're in:**
+### Step 6: URL pre-flight (if a URL was provided)
 
-> **Browser detected** — full QA with visual testing enabled via Playwright MCP.
-
-or
-
-> **No browser tooling found** — running CI + code verification only. UI checks will be listed as manual items.
-> To enable browser testing, run:
-> ```bash
-> claude mcp add --scope project playwright -- npx @playwright/mcp@latest --headless
-> ```
-> Then restart Claude Code. See the `/browse` skill for details.
-
-### Step 2: Load context
-
-1. Find the active feature context:
-   ```bash
-   ls .context/*/PLAN.md 2>/dev/null
-   ```
-
-2. If multiple features exist, ask which to QA. If only one, proceed.
-
-3. Read:
-   - `.context/<feature-id>/PLAN.md` — the success criteria
-   - `.context/<feature-id>/DECISIONS.md` — the locked decisions
-   - `.context/<feature-id>/SUMMARY.md` — what `/go` claims it did
-   - `.context/<feature-id>/QA.md` — the QA plan (if generated by `/build`)
-
-4. If no QA.md exists, generate one now (see Phase 0.5).
-
-### Step 3: Identify affected pages (diff-aware)
-
-Analyze the git diff to determine what pages/routes were affected:
+If invoked as `/qa <url>`, probe the URL before treating it as a browser target:
 
 ```bash
-BASE=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo main)
-git diff "$BASE"...HEAD --name-only
+curl -sS -I --max-time 5 <url> || echo "PREFLIGHT_FAIL"
 ```
 
-From the changed files, identify:
-- **Pages/routes** — files in `app/`, `pages/`, or route handler directories
-- **Components** — UI components that render on specific pages
-- **API endpoints** — route handlers, server actions
-- **Shared code** — types, utilities, database schemas (these affect many pages)
+- **2xx/3xx response**: URL is live. Note the status in the plan; proceed.
+- **Connection refused / timeout / PREFLIGHT_FAIL**: stop and ask the user.
+  > I can't reach `<url>`: `<error>`. Is the dev server running? Start it and I'll retry, or give me a different URL.
 
-Build a **test surface** — the list of URLs and endpoints to verify. This focuses testing on what actually changed, not the entire app.
+Do NOT write a QA plan that depends on a URL you couldn't reach.
 
-### Phase 0.5: Generate QA.md (if missing)
+---
 
-If `/build` didn't generate a QA.md, create one now:
+## Phase 1: Develop the QA Plan
 
-```
-.context/<feature-id>/QA.md
-```
+Produce a **QA plan** and present it to the user for confirmation before executing. The plan covers five categories, in priority order.
 
-```markdown
-# QA: <Feature Name>
+Write it to `.context/<feature-id>/QA.md` if a feature-id exists (from PLAN.md). Otherwise write to `.context/qa-<branch-name>/QA.md` — never skip writing the plan just because there's no feature-id.
 
-## CI Checks
-- [ ] `pnpm typecheck` — full monorepo type check
-- [ ] `pnpm check` — lint (Biome via Ultracite)
-- [ ] `pnpm build` — full production build
+Use the template in `references/qa-plan-template.md`. Drop sections that don't apply — don't invent items to fill empty sections.
 
-## Automated Verifications
-- [ ] [Derived from success criteria — grep, test runs, file checks]
+### Present the plan
 
-## Browser Verifications
-- [ ] [Pages/routes to test — derived from diff analysis]
-- [ ] [UI interactions to verify]
-- [ ] [Console should be error-free on affected pages]
+Show the user the QA plan and wait for confirmation:
 
-## Manual Verifications
-- [ ] [Things even the browser can't verify — subjective quality, design review]
+> Here's the QA plan. <N> agentic self-tests, <M> automated tests to write, <K> browser checks, <H> manual items. Shall I proceed, or adjust the plan?
 
-## Environment
-- Services: [dev server command]
-- Migrations: [if needed]
-- Env vars: [if new]
+If they request changes, update QA.md and re-show. Proceed only when confirmed (or if invoked with `--yes`).
 
-## Suggested Tests
-- [Regression tests to write for bugs found]
-```
+---
 
-## Phase 1: CI Gauntlet
+## Phase 2: Execute the QA Plan with Parallel Sub-Agents
 
-Run all CI checks first. These must pass before any other verification.
+Dispatch work to sub-agents in parallel. This keeps the main context lean and parallelizes independent checks.
 
-### Commands
+### Grouping rule
 
-Read `package.json` scripts and run sequentially:
+Group tasks by dependency:
+- **Group A: CI gauntlet** — the detected typecheck/lint/build/test commands (sequential; gate for everything else). Skip entirely if Step 3 detected zero commands.
+- **Group B: Standards compliance + Agentic self-tests** — parallel sub-agents
+- **Group C: Automated tests** — one sub-agent per test file to write, parallel
+- **Group D: Browser verification** — single sub-agent (if applicable and URL pre-flight passed)
 
-1. `pnpm typecheck` — TypeScript compilation
-2. `pnpm check` — Lint (Ultracite/Biome)
-3. `pnpm build` — Production build
+### Running Group A
 
-### On failure — fix-commit-reverify loop
-
-1. Read the error output.
-2. Identify root cause (missing import, type mismatch, lint violation).
-3. Fix the issue.
-4. Re-run the failed command.
-5. If it passes, commit the fix atomically:
-   ```bash
-   git add <fixed-files>
-   git commit -m "fix(<scope>): <description>"
-   ```
-6. Continue to the next command.
-
-**Max 3 fix attempts per command.** On persistent failure, STOP and report with full error output.
-
-## Phase 2: Automated Verifications
-
-Run code-level checks from QA.md's "Automated Verifications" section.
-
-| Type | How to run |
-|------|-----------|
-| Grep check | `grep -r "pattern" path/to/file` |
-| File exists | `ls path/to/file` |
-| Test suite | `pnpm test --filter=<package>` |
-| Schema check | Read schema file, verify column/field exists |
-| Type export | Read index.ts, verify the export |
-
-### Write suggested tests
-
-If QA.md has "Suggested Tests" and the files don't exist:
-
-1. Find a nearby test file for conventions.
-2. Write the tests following those patterns.
-3. Run them.
-4. Commit:
-   ```bash
-   git add <test-files>
-   git commit -m "test(<scope>): add <description> tests"
-   ```
-
-## Phase 3: Browser Testing
-
-**Skip this phase entirely if Playwright MCP tools are not available.** Move all browser items to the Manual Checklist in the report.
-
-If browser tools are available, use them via the `/browse` skill patterns:
-
-### Step 1: Authenticate (if needed)
-
-If the app requires login:
-
-```
-browser_navigate({ url: "<login-url>" })
-browser_snapshot({})
-browser_type({ element: "Email input", ref: "<ref>", text: "<email>" })
-browser_type({ element: "Password input", ref: "<ref>", text: "<password>" })
-browser_click({ element: "Sign in button", ref: "<ref>" })
-browser_wait_for({ text: "Dashboard" })
-```
-
-**Ask the user for credentials.** Never guess or hardcode.
-
-If auth requires CAPTCHA or MFA the agent can't handle:
-> The app requires authentication I can't automate. Please log in manually and tell me when ready.
-
-### Step 2: Navigate to affected pages
-
-For each URL in the test surface (from Phase 0, Step 3):
-
-```
-browser_navigate({ url: "<url>" })
-```
-
-### Step 3: Check for errors
-
-After each navigation, run a health check:
-
-```
-browser_console_messages({})              → check for JS errors
-browser_snapshot({})                      → verify expected elements exist
-browser_take_screenshot({ filename: "<page-name>.png" })
-browser_network_requests({ filter: "/api/" })  → check for failed requests
-```
-
-**Flag any:**
-- JavaScript console errors (especially uncaught exceptions)
-- Missing elements that should exist per success criteria
-- Failed network requests (4xx, 5xx)
-- Broken layouts (visible in screenshot)
-
-### Step 4: Test interactions
-
-For interactive features (forms, buttons, dropdowns):
-
-```
-browser_snapshot({})                      → find element refs
-browser_type({ ref: "<ref>", text: "test value" })
-browser_click({ ref: "<ref>" })           → submit/interact
-browser_wait_for({ text: "Success" })     → verify result
-browser_snapshot({})                      → compare with before
-browser_console_messages({})              → check for new errors
-browser_take_screenshot({ filename: "<interaction-name>.png" })
-```
-
-### Step 5: Test affected API endpoints
-
-If the feature includes API changes and a dev server is running:
-
+Run sequentially in the main context. Use the actual commands you detected, joined with `&&`. Example:
 ```bash
-# Verify API responses directly via curl
-curl -s -X POST http://localhost:<port>/api/<endpoint> \
-  -H "Content-Type: application/json" \
-  -d '{"field": "value"}' | head -c 500
+pnpm typecheck && pnpm lint && pnpm build && pnpm test
 ```
 
-Or use browser network capture:
-```
-browser_network_clear({})
-browser_click({ ref: "<trigger-ref>" })   → trigger the API call
-browser_network_requests({ filter: "/api/<endpoint>" })  → verify request/response
-```
+Capture output. If any command fails, do NOT spawn Groups B/C/D yet — proceed to Phase 3 to report CI failures first, then enter the bug-fix loop. Getting the CI gauntlet green is the fastest path to a useful signal.
 
-### Step 6: Bug detection and fixing
+### Running Groups B, C, D in parallel
 
-For each bug found:
+For each task group, spawn a sub-agent with a focused prompt. Prompt templates live in `references/subagent-prompts.md` — adapt the variables before sending.
 
-1. **Document the bug** — what's wrong, where, evidence (screenshot/console output).
-2. **Identify the root cause** — read the relevant source code.
-3. **Fix it** — make the minimal code change.
-4. **Commit atomically:**
-   ```bash
-   git add <fixed-files>
-   git commit -m "fix(<scope>): <description>
+Spawn all Group B, C, D sub-agents in one round (parallel). Collect their reports.
 
-   Found during QA: <brief explanation of what was wrong>"
-   ```
-5. **Re-verify** — navigate back to the same page, confirm the fix works:
-   ```
-   browser_navigate({ url: "<url>" })
-   browser_console_messages({})
-   browser_snapshot({})
-   browser_take_screenshot({ filename: "<fix-verified>.png" })
-   ```
-6. **Write a regression test** (if the bug is non-trivial):
-   ```bash
-   git add <test-files>
-   git commit -m "test(<scope>): regression test for <bug description>"
-   ```
+---
 
-Repeat for each bug. Each fix gets its own atomic commit.
+## Phase 3: Write QA-REPORT.md
 
-### Step 7: Responsive check (if UI changes)
+Aggregate all sub-agent findings into `.context/<feature-id>/QA-REPORT.md` (or `.context/qa-<branch-name>/QA-REPORT.md` if no feature-id).
 
-If the feature includes UI changes, test key breakpoints:
+Use the template in `references/qa-report-template.md`. It defines the exact structure for issues, resolved issues, passed checks, and human-required items — plus the status transition rules.
+
+Report the count to the user:
+> Found <N> issues (<X> blockers, <Y> major, <Z> minor). Starting fix loop.
+
+If zero issues found, skip Phase 4 and go to Phase 5.
+
+---
+
+## Phase 4: Bug-Fixing Loop
+
+For each open issue, spawn a sub-agent to fix it. Keep fixes atomic and context-isolated.
+
+### Loop pseudo-code
 
 ```
-browser_navigate({ url: "<url>" })
-browser_take_screenshot({ filename: "desktop.png" })
-browser_resize({ width: 768, height: 1024 })
-browser_take_screenshot({ filename: "tablet.png" })
-browser_resize({ width: 375, height: 812 })
-browser_take_screenshot({ filename: "mobile.png" })
+while QA-REPORT.md has OPEN issues:
+    for issue in open_issues_sorted_by_severity:
+        spawn sub-agent with the bug-fix prompt (references/subagent-prompts.md)
+            passing: the issue details + relevant PLAN.md / DECISIONS.md context
+        sub-agent returns: {fixed: bool, commit_sha: str, verification_output: str}
+
+        if fixed:
+            mark issue RESOLVED in QA-REPORT.md with the commit SHA
+        else:
+            mark as BLOCKED, escalate to user
+
+    if any new issues surfaced during fixes:
+        add them to QA-REPORT.md as OPEN
+
+max iterations: 3  # Safety: stop looping if same issues keep re-opening
 ```
 
-## Phase 4: Health Score
+### Commit hygiene
 
-Compute a ship-readiness score (0-100):
+The bug-fix loop commits atomically per issue. That means a QA pass can produce 5–10 small commits on your branch before `/review` runs. Two things to watch:
 
-| Category | Weight | Scoring |
-|----------|--------|---------|
-| CI checks | 30 | 10 per command (typecheck, lint, build) |
-| Automated verifications | 30 | Proportional to pass rate |
-| Browser testing | 30 | Proportional to pages tested without errors (0 if no browser) |
-| Regression tests | 10 | 10 if tests written for all bugs found, 5 if partial, 0 if none |
+- If the fixes are clearly noise (typos, comment tweaks), the user may want them squashed. Note this in the final report so `/review` or `/pr` can squash if desired.
+- Never force-push. Never rewrite commits that already exist on the remote.
 
-**If no browser tooling:** Redistribute the 30 browser points — 15 to CI, 15 to automated verifications. Max possible score is still 100.
+### Updating QA-REPORT.md
 
-**Thresholds:**
-- **90-100:** Ship it
-- **70-89:** Ship with caveats (manual items remain)
-- **50-69:** Needs work (failures or untested areas)
-- **0-49:** Not ready (CI failing or major issues)
+After each fix, replace the issue block per the "Resolved Issues" shape in `references/qa-report-template.md`.
 
-## Phase 5: Generate QA Report
+### Re-run affected checks
 
-Write to `.context/<feature-id>/QA-REPORT.md`:
+After a batch of fixes, re-run the CI gauntlet and any check whose output hinted at related issues. New failures → new open issues → continue the loop.
+
+### Loop termination
+
+- **All issues RESOLVED** → proceed to Phase 5.
+- **3 iterations with same issue still failing** → stop the loop, mark BLOCKED, escalate:
+  > Issue #<N> remained OPEN after 3 fix attempts. Need human decision before proceeding.
+- **User interrupts** → save QA-REPORT.md state, stop.
+
+---
+
+## Phase 5: Final Report & Handoff
+
+### Final verification pass
+
+Re-run the detected CI gauntlet one more time in the main context. All must pass. If Group A was N/A in Step 3 (no commands detected), skip — but note it in the report.
+
+### Update QA-REPORT.md header
 
 ```markdown
-# QA Report: <Feature Name>
-
-## Health Score: XX/100
-
-## Mode
-[Full QA with browser | CI + code verification only]
-
-## CI Checks
-
-| Command | Status | Notes |
-|---------|--------|-------|
-| `pnpm typecheck` | PASS | |
-| `pnpm check` | PASS | |
-| `pnpm build` | PASS | Fixed: missing export |
-
-## Automated Verifications
-
-| # | Check | Status | Evidence |
-|---|-------|--------|----------|
-| 1 | Schema column exists | PASS | `packages/db/src/schema.ts:47` |
-| 2 | Tests pass | PASS | 3 tests, 3 passing |
-
-## Browser Testing
-
-| # | Page/Flow | Status | Evidence |
-|---|-----------|--------|----------|
-| 1 | `/admin/transactions` | PASS | No console errors, screenshot attached |
-| 2 | Refund reason dropdown | PASS | Interaction verified, snapshot diff clean |
-
-*(or "Skipped — no browser tooling available")*
-
-## Bugs Found & Fixed
-
-| # | Bug | Fix | Commit | Regression Test |
-|---|-----|-----|--------|-----------------|
-| 1 | Badge not rendering | Missing import in page.tsx | `abc1234` | `refund-badge.test.ts` |
-
-## Tests Written
-
-- `packages/payments/src/__tests__/refund-reason.test.ts` (3 tests)
-- `apps/admin/src/__tests__/refund-badge.test.ts` (1 regression test)
-
-## Manual Checklist
-
-Items requiring human verification (not automatable):
-
-- [ ] Design matches mockup colors exactly
-- [ ] Animation feels smooth on low-end device
-
-## Fixes Applied
-
-| Commit | What | Why |
-|--------|------|-----|
-| `abc1234` | Added missing import | Badge component not rendering |
-| `def5678` | Fixed type mismatch | Cross-package enum type drift |
-
-## Summary
-
-- **Health Score:** XX/100
-- **CI:** 3/3 PASS
-- **Automated:** N/N PASS
-- **Browser:** N pages tested, M bugs found and fixed
-- **Manual:** N items pending human review
-- **Tests written:** N (including M regression tests)
-- **Fixes applied:** N atomic commits
+**Status:** PASSED
+**Iterations:** <N>
+**Fixes applied:** <count> commits
+**Duration:** <approx time>
 ```
 
-## Phase 6: Next Steps
+### Present to user
 
-**Score 90+, all automated checks pass:**
+> QA complete.
+>
+> - Fixed <N> issues across <M> commits
+> - All detected CI checks passing (or: no CI gauntlet — this repo has none)
+> - <X> human-required items remain (not blockers): see QA-REPORT.md
+>
+> Ready for `/docs` to update documentation, then `/review` and `/pr`.
 
-> Health score: XX/100. All automated QA passed. N manual items remain.
-> Ready for `/review`.
-
-**Score 70-89, some manual items:**
-
-> Health score: XX/100. CI and code checks pass. N browser/manual items need attention.
-> Review manual checklist in QA-REPORT.md, then `/review`.
-
-**Score below 70:**
-
-> Health score: XX/100. Issues found:
-> [List failures]
-> Want me to investigate further?
-
-**Bugs were found and fixed:**
-
-> Found and fixed N bugs with atomic commits. Regression tests added.
-> Run `/review` to verify code quality of the fixes.
+If human-required items exist, list them so the user can decide whether to address them before shipping.
 
 ---
 
 ## Running Without a Feature Context
 
-If invoked with just a URL (`/qa http://localhost:3000`) and no `.context/` plan exists:
+If invoked with just a URL or no plan (`/qa http://localhost:3000`):
 
-1. Skip Phase 0 context loading.
-2. Run CI gauntlet (Phase 1) against the current working tree.
-3. If browser is available, navigate to the URL and run exploratory testing:
-   - Check all pages reachable from the URL (breadth-first, max 10 pages)
-   - Check console for errors on each page
-   - Screenshot each page
-   - Test interactive elements
-4. Report findings.
-
-This mode is useful for quick smoke tests without the full `/build` → `/go` workflow.
+1. Skip PLAN.md loading.
+2. Still run Step 3 (detect CI commands) and Step 5 (Playwright availability) — they apply even without a feature.
+3. Run Step 6 (URL pre-flight). If the URL is dead, stop and ask.
+4. Ask the user:
+   > What should I focus on? (e.g., "all API endpoints", "the checkout flow", "smoke test the homepage")
+5. Build a lightweight QA plan targeting the user's stated focus.
+6. Execute → report → fix loop, same as above.
 
 ---
 
 ## What This Skill Does NOT Do
 
-- **Does not review code quality.** That's `/review`.
+- **Does not review code quality.** That's `/review`. QA is about runtime correctness and standards compliance.
 - **Does not create PRs.** That's `/pr`.
-- **Does not update docs.** That's `/docs`.
-- **Does not pretend to verify UI without a browser.** If no browser tooling, items go in the manual checklist.
-- **Does not run indefinitely.** Max 3 fix attempts per CI command. Bugs get one fix attempt each.
-- **Does not start long-running servers.** If dev server isn't running for API tests, notes it in the report.
+- **Does not update docs.** That's `/docs`, which the user should run after QA passes.
+- **Does not require Playwright.** Browser automation is a nice-to-have for frontend features, not a dependency. Backend QA works fully without it.
+- **Does not require pnpm / npm / any specific toolchain.** CI commands are detected per-repo in Step 3.
+- **Does not start long-running servers.** If a dev server is needed for API/browser checks, note it in the plan and ask the user to start it.
+- **Does not loop forever.** Max 3 fix attempts per issue, max 3 overall iterations. Escalates to user on repeated failure.
+- **Does not invent success criteria.** If PLAN.md is missing or the user's claim doesn't match the branch, asks the user — doesn't guess.

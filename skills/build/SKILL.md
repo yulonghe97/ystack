@@ -6,7 +6,9 @@ description: >
   skill when the user says 'build', '/build', 'implement', 'add feature', 'plan feature',
   'I want to build', 'let me build', 'work on', or describes a feature they want to implement.
   This is the entry point for the ystack workflow — it produces a PLAN.md that /go executes.
-user-invocable: true
+compatibility: Designed for Claude Code
+metadata:
+  user-invocable: "true"
 ---
 
 # /build — Plan a Feature
@@ -17,12 +19,14 @@ You are the planning phase of the ystack agent harness. Your job is to understan
 
 ## Phase 0: Locate the Module
 
-Identify which module(s) this feature belongs to.
+Identify which module(s) this feature belongs to. **Do not skip this phase** — module detection drives everything downstream. `/go` edits files inside the matched module's package; `/qa` runs tests scoped to it. Guessing the module silently causes plans to target wrong files, and the mistake only surfaces after code is written.
 
-1. Read `.ystack/config.json` if it exists. Match the feature to a module by checking `scope` globs:
+1. **Always check for `.ystack/config.json` first.** This is the module registry — if it exists, it's the source of truth for module → scope glob mapping:
    ```bash
-   cat .ystack/config.json
+   test -f .ystack/config.json && cat .ystack/config.json || echo "MISSING: .ystack/config.json"
    ```
+   - **If present:** match the feature to a module by checking `scope` globs. In your response, state the match explicitly: *"Matched to module **<name>** via glob `<pattern>` in `.ystack/config.json`."*
+   - **If absent or no glob matches:** say so out loud — *"No `.ystack/config.json` match; falling back to docs navigation."* — then proceed to step 2.
 
 2. If no config exists or no match found, scan the docs directory structure:
    ```bash
@@ -191,76 +195,36 @@ What must be TRUE in the codebase when this feature is done. Each criterion is i
 
 **Rules for plans:**
 
-1. **2-4 tasks.** If you need more, the feature should be split. Each task must fit in a fresh agent context.
+1. **Tasks describe intent, not implementation.** A plan is not a diff. Describe *what* to build in prose; let `/go` figure out *how*. This isn't stylistic — pre-writing code in the plan wastes tokens, can drift from actual conventions (wrong import paths, outdated APIs), and makes the executor second-guess whether to follow your snippet or write fresh.
 
-2. **File targets are explicit.** Every task lists exactly which files to read and modify. A fresh agent with no prior context should know exactly where to look.
+   **Good** (`Do:` fields):
+   - "Add a `refundReason` enum column to the `transactions` table. Values: duplicate, fraud, requested, other. Follow existing enum patterns in `packages/db/src/schema.ts`."
+   - "Extend `POST /api/payments/refund` to accept an optional `reason` field, validated as one of the enum values. Return 400 if invalid."
 
-3. **Verification is concrete.** Not "verify it works" — rather "run `pnpm typecheck` and confirm no errors" or "grep for `refundReason` in `schema.ts`".
+   **Bad** (don't do this):
+   - Code fences (```` ```ts ````), function bodies, SQL, schema DSL, import statements
+   - Type definitions written out (reference existing types by name instead)
+   - Config file contents
 
-4. **Dependencies are explicit.** If task-3 needs types from task-1, say so. Tasks without dependencies can run in parallel.
+   OK to include: file paths, function/type/table names as references, enum values as data, commands to run for verification.
 
-5. **No scope reduction.** Every locked decision from DECISIONS.md must be covered by at least one task. If a decision can't be delivered, STOP and tell the user — don't silently simplify.
+2. **2-4 tasks.** If you need more, the feature should be split. Each task must fit in a fresh agent context.
 
-6. **Each task produces a commit.** The task description should correspond to a single atomic commit. "Add column and update 3 API endpoints and redesign the UI" is too big.
+3. **File targets are explicit.** Every task lists exactly which files to read and modify. A fresh agent with no prior context should know exactly where to look.
 
-7. **Reference the docs.** If a task implements something described in the docs (a contract, a data model, an API shape), reference the doc page so the executor can read it.
+4. **Verification is concrete.** Not "verify it works" — rather "run `pnpm typecheck` and confirm no errors" or "grep for `refundReason` in `schema.ts`".
 
-## Phase 5.5: Generate QA Plan
+5. **Dependencies are explicit.** If task-3 needs types from task-1, say so. Tasks without dependencies can run in parallel.
 
-After creating PLAN.md, generate a QA plan that defines how to verify the feature works.
+6. **No scope reduction.** Every locked decision from DECISIONS.md must be covered by at least one task. If a decision can't be delivered, STOP and tell the user — don't silently simplify.
 
-Create:
-```
-.context/<feature-id>/QA.md
-```
+7. **Each task produces a commit.** The task description should correspond to a single atomic commit. "Add column and update 3 API endpoints and redesign the UI" is too big.
 
-**QA.md format:**
-
-```markdown
-# QA: <Feature Name>
-
-## CI Checks
-Commands the agent MUST run and pass:
-- [ ] `pnpm typecheck` — full monorepo type check
-- [ ] `pnpm check` — lint (Biome via Ultracite)
-- [ ] `pnpm build` — full production build
-
-## Automated Verifications
-Checks the agent can run without a browser:
-- [ ] [Derived from success criteria — translate each criterion into a runnable check]
-- [ ] [e.g., "`pnpm test --filter @acme/payments` passes"]
-- [ ] [e.g., "grep for `refundReason` in `packages/db/src/schema.ts` returns a match"]
-
-## Manual Verifications
-Things a human must check (agent cannot verify without browser tooling):
-- [ ] [UI checks — e.g., "Admin dashboard renders RefundReasonBadge with correct colors"]
-- [ ] [Flow checks — e.g., "Login → navigate to settings → change password works"]
-
-## Environment
-- Services needed: [e.g., API server (`pnpm dev:api`)]
-- Migrations: [e.g., "Needs `refund_reason` column migrated"]
-- Env vars: [e.g., "None new"]
-
-## Suggested Tests
-Tests worth writing to prevent regression (agent writes these during /qa):
-- [file path and test case descriptions]
-```
-
-**Rules for QA.md:**
-
-1. **CI Checks are standard.** Always include typecheck, lint, and build unless the project uses different tooling. Read `package.json` to confirm command names.
-
-2. **Automated Verifications come from success criteria.** Each criterion in PLAN.md should map to at least one automated verification. If a criterion can't be checked automatically (needs a browser), put it in Manual.
-
-3. **Be honest about Manual items.** Don't pretend the agent can verify UI rendering. If it needs eyes, say so.
-
-4. **Suggested Tests are specific.** Include file paths and test case descriptions. The `/qa` agent will write these if they don't exist.
-
-5. **Environment section prevents wasted cycles.** If the feature needs a running database or specific env vars, say so upfront — the `/qa` agent shouldn't discover this by failing.
+8. **Reference the docs.** If a task implements something described in the docs (a contract, a data model, an API shape), reference the doc page so the executor can read it.
 
 ## Phase 6: Plan Check
 
-Before presenting the plan to the user, self-check:
+Before presenting the plan to the user, self-check. The five checks below are the fast-path version; for the full coverage-table format and extended scope-reduction heuristics, see [references/plan-checker.md](references/plan-checker.md).
 
 1. **Coverage check:** Read DECISIONS.md. For each locked decision, confirm at least one task delivers it. If any decision is uncovered, add a task or flag the gap.
 
@@ -273,6 +237,8 @@ Before presenting the plan to the user, self-check:
 3. **Size check:** Each task should touch 1-5 files. If a task lists more than 5 files, split it.
 
 4. **Fresh agent test:** For each task, ask: "Could a fresh agent with no conversation history execute this task from the description alone?" If not, add more detail to the task description.
+
+5. **Code leak check:** Scan every task's `Do:` field for code fences (```` ``` ````), function bodies, SQL, or import statements. If found, rewrite as prose — describe the change, don't pre-write it. The executor reads the actual codebase for patterns; a snippet in the plan either duplicates that or contradicts it.
 
 ## Phase 7: Present the Plan
 
