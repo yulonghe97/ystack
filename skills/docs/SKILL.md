@@ -5,7 +5,9 @@ description: >
   implemented and verified — never for planned or in-progress work. Use this skill
   when the user says 'docs', '/docs', 'update docs', 'update documentation',
   'sync docs', or after /review passes and before /pr.
-user-invocable: true
+compatibility: Designed for Claude Code
+metadata:
+  user-invocable: "true"
 ---
 
 # /docs — Update Documentation

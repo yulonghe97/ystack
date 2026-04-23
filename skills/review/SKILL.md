@@ -6,7 +6,9 @@ description: >
   'did it work', 'is it done', 'review the changes', or after /go completes and
   the user wants to verify the implementation before shipping.
   Also supports reviewing external PRs by URL (e.g., '/review owner/repo#123').
-user-invocable: true
+compatibility: Designed for Claude Code
+metadata:
+  user-invocable: "true"
 ---
 
 # /review — Multi-Agent Code Review + Verification

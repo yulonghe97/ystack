@@ -7,7 +7,9 @@ description: >
   'bump', 'typo', 'quick change', or describes a change that's clearly a bug fix,
   dependency update, config tweak, or other small change that doesn't represent a
   new feature or architectural change.
-user-invocable: true
+compatibility: Designed for Claude Code
+metadata:
+  user-invocable: "true"
 ---
 
 # /quick — Fast Path for Small Changes

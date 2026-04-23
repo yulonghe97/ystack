@@ -6,7 +6,9 @@ description: >
   for visual testing. Use this skill when the user says 'browse', '/browse', 'open browser',
   'check the page', 'screenshot', or when /qa needs to test affected pages.
   Requires Playwright MCP to be registered (see Setup).
-user-invocable: true
+compatibility: Designed for Claude Code. Requires Playwright MCP.
+metadata:
+  user-invocable: "true"
 ---
 
 # /browse — Browser Automation
