@@ -5,7 +5,9 @@ description: >
   detects doc gaps, and delegates to the project's pr-draft skill if available.
   Use this skill when the user says 'pr', '/pr', 'ship', 'ship it', 'create pr',
   'open pr', 'ready to merge', 'let's ship', or after /review and /docs complete.
-user-invocable: true
+compatibility: Designed for Claude Code
+metadata:
+  user-invocable: "true"
 ---
 
 # /pr — Ship It

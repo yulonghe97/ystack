@@ -6,7 +6,9 @@ description: >
   'what do reviewers say', 'check PR comments', or when a PR has review comments that
   need to be addressed.
   Works with comments from human reviewers, AI reviewers, and CI checks.
-user-invocable: true
+compatibility: Designed for Claude Code
+metadata:
+  user-invocable: "true"
 ---
 
 # /address-review — Address Review Comments

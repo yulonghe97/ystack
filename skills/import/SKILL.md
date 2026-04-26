@@ -6,7 +6,9 @@ description: >
   'adopt this project', 'onboard this repo', 'scan the codebase', 'set up ystack here',
   or when adding ystack to a project that already has code and possibly docs.
   Supports incremental adoption with --module flag.
-user-invocable: true
+compatibility: Designed for Claude Code
+metadata:
+  user-invocable: "true"
 ---
 
 # /import — Adopt an Existing Project

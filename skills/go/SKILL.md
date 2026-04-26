@@ -6,7 +6,9 @@ description: >
   'go', '/go', 'execute', 'run the plan', 'execute the plan', 'start building',
   'let's do it', or confirms a plan and wants to proceed with implementation.
   Requires a PLAN.md from a prior /build run.
-user-invocable: true
+compatibility: Designed for Claude Code
+metadata:
+  user-invocable: "true"
 ---
 
 # /go — Execute the Plan
@@ -134,7 +136,7 @@ Spawn the subagent with:
 - The task description (Do, Files, Verify fields)
 - The relevant locked decisions from DECISIONS.md
 - Any doc page references from the task
-- The executor agent prompt from `resources/executor.md`
+- The executor agent prompt from `references/executor.md`
 
 After the subagent completes, verify its work in the orchestrator context before moving to the next wave.
 
