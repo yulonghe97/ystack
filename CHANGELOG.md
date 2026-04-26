@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.0 — 2026-04-26
+
+### Added
+
+- **`/qa` skill** — plan-driven QA with CI detection, agentic self-tests, automated test planning, optional browser checks, and `QA-REPORT.md` output
+- **`/qa --fix`** — opt-in automatic remediation loop for open QA issues
+- **`/browse` skill** — browser automation and research workflow support
+- **`/build` Phase 5.5** — generates `QA.md` alongside `PLAN.md`
+- **Build plan preview** — renders plan review HTML with sticky tabs, summary chips, ystack identity, and copy-first preview guidance
+
+### Changed
+
+- **`/review` is now QA-aware** — consumes `QA-REPORT.md`, trusts evidenced QA checks, carries open QA issues into the verdict, and focuses on diff-only code risks
+- README command tables now document `/qa [--fix]` and the QA-aware `/review` flow in English and Chinese
+
+---
+
 ## 0.2.4 — 2026-04-10
 
 ### Added
