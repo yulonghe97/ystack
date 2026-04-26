@@ -1,3 +1,6 @@
+/* eslint-disable */
+/* biome-ignore-all lint: ystack hook runtime is vendored into consuming repos. */
+
 /**
  * ystack no-undocumented-check — PreToolUse hook on Edit
  *

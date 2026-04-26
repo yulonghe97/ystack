@@ -51,6 +51,7 @@ my-app/
 │   │   ├── review/SKILL.md
 │   │   ├── docs/SKILL.md
 │   │   └── pr/SKILL.md
+│   ├── hooks/                   # (gitignored) local hook runtime files
 │   ├── rules/                   # Agent lint rules
 │   └── settings.json            # Hooks configured
 ├── .context/                    # (gitignored) ephemeral working files
@@ -224,6 +225,7 @@ npx ystack init --skills-only
 5. **Add to `.gitignore`:**
    ```
    .context/
+   .claude/hooks/
    ```
 
 6. **Suggest next steps:**
