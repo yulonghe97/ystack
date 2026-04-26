@@ -25,61 +25,72 @@
   <line x1="48" y1="64" x2="852" y2="64" stroke="#cbd5e1" stroke-width="1"/>
 
   <!-- Stage 1: /scaffold -->
-  <rect x="48" y="80" width="132" height="30" fill="#0f172a"/>
+  <rect x="48" y="80" width="112" height="30" fill="#0f172a"/>
   <text x="58" y="99" class="cmd">/scaffold</text>
-  <text x="170" y="99" class="num" text-anchor="end">01</text>
-  <rect x="48" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="150" y="99" class="num" text-anchor="end">01</text>
+  <rect x="48" y="110" width="112" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
   <text x="58" y="130" class="action">定义</text>
   <text x="58" y="146" class="desc">扫描或搭建模块</text>
   <text x="58" y="158" class="desc">骨架、文档与</text>
   <text x="58" y="170" class="desc">进度文件</text>
 
   <!-- Stage 2: /build -->
-  <rect x="182" y="80" width="132" height="30" fill="#0f172a"/>
-  <text x="192" y="99" class="cmd">/build</text>
-  <text x="304" y="99" class="num" text-anchor="end">02</text>
-  <rect x="182" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="192" y="130" class="action">规划</text>
-  <text x="192" y="146" class="desc">读取文档与代码，</text>
-  <text x="192" y="158" class="desc">暴露假设，</text>
-  <text x="192" y="170" class="desc">生成计划</text>
+  <rect x="163" y="80" width="112" height="30" fill="#0f172a"/>
+  <text x="173" y="99" class="cmd">/build</text>
+  <text x="265" y="99" class="num" text-anchor="end">02</text>
+  <rect x="163" y="110" width="112" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="173" y="130" class="action">规划</text>
+  <text x="173" y="146" class="desc">读取文档与代码，</text>
+  <text x="173" y="158" class="desc">暴露假设，</text>
+  <text x="173" y="170" class="desc">生成计划</text>
 
   <!-- Stage 3: /go -->
-  <rect x="316" y="80" width="132" height="30" fill="#0f172a"/>
-  <text x="326" y="99" class="cmd">/go</text>
-  <text x="438" y="99" class="num" text-anchor="end">03</text>
-  <rect x="316" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="326" y="130" class="action">执行</text>
-  <text x="326" y="146" class="desc">每个任务一个全新</text>
-  <text x="326" y="158" class="desc">子Agent，原子提交</text>
+  <rect x="278" y="80" width="112" height="30" fill="#0f172a"/>
+  <text x="288" y="99" class="cmd">/go</text>
+  <text x="380" y="99" class="num" text-anchor="end">03</text>
+  <rect x="278" y="110" width="112" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="288" y="130" class="action">执行</text>
+  <text x="288" y="146" class="desc">每个任务一个</text>
+  <text x="288" y="158" class="desc">全新子Agent，</text>
+  <text x="288" y="170" class="desc">原子提交</text>
 
-  <!-- Stage 4: /review -->
-  <rect x="450" y="80" width="132" height="30" fill="#0f172a"/>
-  <text x="460" y="99" class="cmd">/review</text>
-  <text x="572" y="99" class="num" text-anchor="end">04</text>
-  <rect x="450" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="460" y="130" class="action">验证</text>
-  <text x="460" y="146" class="desc">以目标为导向，</text>
-  <text x="460" y="158" class="desc">对照成功标准</text>
-  <text x="460" y="170" class="desc">逆向检查</text>
+  <!-- Stage 4: /qa -->
+  <rect x="393" y="80" width="112" height="30" fill="#0f172a"/>
+  <text x="403" y="99" class="cmd">/qa</text>
+  <text x="495" y="99" class="num" text-anchor="end">04</text>
+  <rect x="393" y="110" width="112" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="403" y="130" class="action">测试</text>
+  <text x="403" y="146" class="desc">执行 QA 计划，</text>
+  <text x="403" y="158" class="desc">写入报告，</text>
+  <text x="403" y="170" class="desc">可选修复</text>
 
-  <!-- Stage 5: /docs -->
-  <rect x="584" y="80" width="132" height="30" fill="#0f172a"/>
-  <text x="594" y="99" class="cmd">/docs</text>
-  <text x="706" y="99" class="num" text-anchor="end">05</text>
-  <rect x="584" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="594" y="130" class="action">文档</text>
-  <text x="594" y="146" class="desc">仅为已完成的</text>
-  <text x="594" y="158" class="desc">工作更新文档</text>
+  <!-- Stage 5: /review -->
+  <rect x="508" y="80" width="112" height="30" fill="#0f172a"/>
+  <text x="518" y="99" class="cmd">/review</text>
+  <text x="610" y="99" class="num" text-anchor="end">05</text>
+  <rect x="508" y="110" width="112" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="518" y="130" class="action">审查</text>
+  <text x="518" y="146" class="desc">基于 QA 证据，</text>
+  <text x="518" y="158" class="desc">检查 diff 级</text>
+  <text x="518" y="170" class="desc">代码风险</text>
 
-  <!-- Stage 6: /pr -->
-  <rect x="718" y="80" width="132" height="30" fill="#0f172a"/>
-  <text x="728" y="99" class="cmd">/pr</text>
-  <text x="840" y="99" class="num" text-anchor="end">06</text>
-  <rect x="718" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="728" y="130" class="action">发布</text>
-  <text x="728" y="146" class="desc">验证、文档检查、</text>
-  <text x="728" y="158" class="desc">创建 PR</text>
+  <!-- Stage 6: /docs -->
+  <rect x="623" y="80" width="112" height="30" fill="#0f172a"/>
+  <text x="633" y="99" class="cmd">/docs</text>
+  <text x="725" y="99" class="num" text-anchor="end">06</text>
+  <rect x="623" y="110" width="112" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="633" y="130" class="action">文档</text>
+  <text x="633" y="146" class="desc">仅为已完成的</text>
+  <text x="633" y="158" class="desc">工作更新文档</text>
+
+  <!-- Stage 7: /pr -->
+  <rect x="738" y="80" width="112" height="30" fill="#0f172a"/>
+  <text x="748" y="99" class="cmd">/pr</text>
+  <text x="840" y="99" class="num" text-anchor="end">07</text>
+  <rect x="738" y="110" width="112" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="748" y="130" class="action">发布</text>
+  <text x="748" y="146" class="desc">验证、文档检查、</text>
+  <text x="748" y="158" class="desc">创建 PR</text>
 
   <!-- Pipeline label -->
   <line x1="48" y1="200" x2="310" y2="200" stroke="#cbd5e1" stroke-width="1"/>

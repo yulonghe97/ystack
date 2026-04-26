@@ -25,61 +25,73 @@
   <line x1="48" y1="64" x2="852" y2="64" stroke="#cbd5e1" stroke-width="1"/>
 
   <!-- Stage 1: /scaffold -->
-  <rect x="48" y="80" width="132" height="30" fill="#0f172a"/>
+  <rect x="48" y="80" width="112" height="30" fill="#0f172a"/>
   <text x="58" y="99" class="cmd">/scaffold</text>
-  <text x="170" y="99" class="num" text-anchor="end">01</text>
-  <rect x="48" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="150" y="99" class="num" text-anchor="end">01</text>
+  <rect x="48" y="110" width="112" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
   <text x="58" y="130" class="action">Define</text>
   <text x="58" y="146" class="desc">Scan or scaffold</text>
-  <text x="58" y="158" class="desc">module stubs, docs</text>
-  <text x="58" y="170" class="desc">&amp; progress files</text>
+  <text x="58" y="158" class="desc">module stubs,</text>
+  <text x="58" y="170" class="desc">docs &amp; progress</text>
 
   <!-- Stage 2: /build -->
-  <rect x="182" y="80" width="132" height="30" fill="#0f172a"/>
-  <text x="192" y="99" class="cmd">/build</text>
-  <text x="304" y="99" class="num" text-anchor="end">02</text>
-  <rect x="182" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="192" y="130" class="action">Plan</text>
-  <text x="192" y="146" class="desc">Read docs + code,</text>
-  <text x="192" y="158" class="desc">surface assumptions,</text>
-  <text x="192" y="170" class="desc">create plan</text>
+  <rect x="163" y="80" width="112" height="30" fill="#0f172a"/>
+  <text x="173" y="99" class="cmd">/build</text>
+  <text x="265" y="99" class="num" text-anchor="end">02</text>
+  <rect x="163" y="110" width="112" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="173" y="130" class="action">Plan</text>
+  <text x="173" y="146" class="desc">Read docs + code,</text>
+  <text x="173" y="158" class="desc">surface assumptions,</text>
+  <text x="173" y="170" class="desc">create plan</text>
 
   <!-- Stage 3: /go -->
-  <rect x="316" y="80" width="132" height="30" fill="#0f172a"/>
-  <text x="326" y="99" class="cmd">/go</text>
-  <text x="438" y="99" class="num" text-anchor="end">03</text>
-  <rect x="316" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="326" y="130" class="action">Execute</text>
-  <text x="326" y="146" class="desc">Fresh subagent per</text>
-  <text x="326" y="158" class="desc">task, atomic commits</text>
+  <rect x="278" y="80" width="112" height="30" fill="#0f172a"/>
+  <text x="288" y="99" class="cmd">/go</text>
+  <text x="380" y="99" class="num" text-anchor="end">03</text>
+  <rect x="278" y="110" width="112" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="288" y="130" class="action">Execute</text>
+  <text x="288" y="146" class="desc">Fresh subagent</text>
+  <text x="288" y="158" class="desc">per task, atomic</text>
+  <text x="288" y="170" class="desc">commits</text>
 
-  <!-- Stage 4: /review -->
-  <rect x="450" y="80" width="132" height="30" fill="#0f172a"/>
-  <text x="460" y="99" class="cmd">/review</text>
-  <text x="572" y="99" class="num" text-anchor="end">04</text>
-  <rect x="450" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="460" y="130" class="action">Verify</text>
-  <text x="460" y="146" class="desc">Goal-backward check</text>
-  <text x="460" y="158" class="desc">against success</text>
-  <text x="460" y="170" class="desc">criteria</text>
+  <!-- Stage 4: /qa -->
+  <rect x="393" y="80" width="112" height="30" fill="#0f172a"/>
+  <text x="403" y="99" class="cmd">/qa</text>
+  <text x="495" y="99" class="num" text-anchor="end">04</text>
+  <rect x="393" y="110" width="112" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="403" y="130" class="action">Test</text>
+  <text x="403" y="146" class="desc">Run QA plan,</text>
+  <text x="403" y="158" class="desc">write report,</text>
+  <text x="403" y="170" class="desc">optional fixes</text>
 
-  <!-- Stage 5: /docs -->
-  <rect x="584" y="80" width="132" height="30" fill="#0f172a"/>
-  <text x="594" y="99" class="cmd">/docs</text>
-  <text x="706" y="99" class="num" text-anchor="end">05</text>
-  <rect x="584" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="594" y="130" class="action">Document</text>
-  <text x="594" y="146" class="desc">Update docs for</text>
-  <text x="594" y="158" class="desc">completed work only</text>
+  <!-- Stage 5: /review -->
+  <rect x="508" y="80" width="112" height="30" fill="#0f172a"/>
+  <text x="518" y="99" class="cmd">/review</text>
+  <text x="610" y="99" class="num" text-anchor="end">05</text>
+  <rect x="508" y="110" width="112" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="518" y="130" class="action">Review</text>
+  <text x="518" y="146" class="desc">Check diff-only</text>
+  <text x="518" y="158" class="desc">risks using QA</text>
+  <text x="518" y="170" class="desc">evidence</text>
 
-  <!-- Stage 6: /pr -->
-  <rect x="718" y="80" width="132" height="30" fill="#0f172a"/>
-  <text x="728" y="99" class="cmd">/pr</text>
-  <text x="840" y="99" class="num" text-anchor="end">06</text>
-  <rect x="718" y="110" width="132" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="728" y="130" class="action">Ship</text>
-  <text x="728" y="146" class="desc">Verify, docs check,</text>
-  <text x="728" y="158" class="desc">create PR</text>
+  <!-- Stage 6: /docs -->
+  <rect x="623" y="80" width="112" height="30" fill="#0f172a"/>
+  <text x="633" y="99" class="cmd">/docs</text>
+  <text x="725" y="99" class="num" text-anchor="end">06</text>
+  <rect x="623" y="110" width="112" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="633" y="130" class="action">Document</text>
+  <text x="633" y="146" class="desc">Update docs for</text>
+  <text x="633" y="158" class="desc">completed work</text>
+  <text x="633" y="170" class="desc">only</text>
+
+  <!-- Stage 7: /pr -->
+  <rect x="738" y="80" width="112" height="30" fill="#0f172a"/>
+  <text x="748" y="99" class="cmd">/pr</text>
+  <text x="840" y="99" class="num" text-anchor="end">07</text>
+  <rect x="738" y="110" width="112" height="70" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="748" y="130" class="action">Ship</text>
+  <text x="748" y="146" class="desc">Verify, docs</text>
+  <text x="748" y="158" class="desc">check, create PR</text>
 
   <!-- Pipeline label -->
   <line x1="48" y1="200" x2="300" y2="200" stroke="#cbd5e1" stroke-width="1"/>

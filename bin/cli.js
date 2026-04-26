@@ -275,8 +275,11 @@ function ensureGitignore(projectRoot) {
 	if (!existsSync(gitignorePath)) return;
 
 	const content = readFileSync(gitignorePath, "utf-8");
-	if (!content.includes(".context/")) {
-		writeFileSync(gitignorePath, content.trimEnd() + "\n.context/\n");
+	const entries = [".context/", ".claude/hooks/"];
+	const missing = entries.filter((entry) => !content.includes(entry));
+
+	if (missing.length > 0) {
+		writeFileSync(gitignorePath, `${content.trimEnd()}\n${missing.join("\n")}\n`);
 	}
 }
 
@@ -449,6 +452,7 @@ async function cmdUpdate() {
 		for (const file of readdirSync(hooksDir)) {
 			cpSync(join(hooksDir, file), join(targetHooksDir, file));
 		}
+		ensureGitignore(projectRoot);
 		p.log.success("Hook files updated");
 	} else {
 		p.log.info("No hooks to update");
@@ -737,6 +741,7 @@ dist/
 .turbo/
 .next/
 .context/
+.claude/hooks/
 .env
 .env.local
 *.tsbuildinfo

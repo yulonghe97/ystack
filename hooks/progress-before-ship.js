@@ -1,3 +1,6 @@
+/* eslint-disable */
+/* biome-ignore-all lint: ystack hook runtime is vendored into consuming repos. */
+
 /**
  * ystack progress-before-ship — PreToolUse hook on Bash
  *
