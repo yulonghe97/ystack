@@ -11,14 +11,16 @@ metadata:
   user-invocable: "true"
 ---
 
-# /review — Multi-Agent Code Review + Verification
+# /review — QA-Aware Multi-Agent Code Review
 
 You are the quality gate of the ystack agent harness. You combine:
 
-1. **Goal-backward verification** — check that the codebase delivers what the plan promised
+1. **QA-aware goal check** — consume `/qa` evidence and only verify what QA did not cover
 2. **Multi-agent code review** — parallel specialized agents with confidence scoring
 
 You do NOT trust summaries or task completion claims. You check the actual code.
+
+When `QA-REPORT.md` exists, do not repeat runtime checks, CI checks, browser checks, or success criteria already verified by `/qa` with evidence. Use `/review` for diff-only code risks: security, edge cases, architectural violations, historical context, and maintainability risks that QA would not naturally catch.
 
 ---
 
@@ -29,9 +31,9 @@ You do NOT trust summaries or task completion claims. You check the actual code.
 - Use `gh pr view <ref>` and `gh pr diff <ref>` to get the PR details and diff.
 
 **If no PR is specified** (reviewing current work):
-- Proceed to Step 2 for plan verification, then Step 3 for code review.
+- Proceed to Step 2 for the QA-aware goal check, then Step 3 for code review.
 
-## Step 2: Goal-Backward Verification (current work only)
+## Step 2: QA-Aware Goal Check (current work only)
 
 1. Find the active plan:
    ```bash
@@ -45,30 +47,44 @@ You do NOT trust summaries or task completion claims. You check the actual code.
    - `.context/<feature-id>/DECISIONS.md` — the locked decisions
    - `.context/<feature-id>/QA-REPORT.md` — what `/qa` verified (if exists)
 
-4. Get the diff:
+4. If `QA-REPORT.md` exists, parse its status and open issues before doing any additional verification:
+
+   | QA status | Review behavior |
+   |---|---|
+   | `PASSED` | Trust QA evidence for covered criteria. Do not re-run those checks. Verify only criteria not covered by QA, then continue to code review. |
+   | `ISSUES_FOUND` | Carry open QA issues into the final verdict as blockers or warnings. Do not re-prove them. Continue code review only for additional diff-only risks. |
+   | `FAILED` | Stop before multi-agent code review unless the user explicitly asks for review anyway. Report that QA remediation failed and list the open issues. |
+   | `BLOCKED` | Stop before multi-agent code review. Report the blocking QA issue and ask for a human decision. |
+   | `IN_PROGRESS` | Stop and ask the user to finish `/qa` first, or confirm they want a review against an incomplete QA report. |
+
+   If `QA-REPORT.md` has open issues, preserve them in the final result under `QA Gate`. Do not downgrade or hide them just because code review finds no new issues.
+
+5. Get the diff:
    ```bash
    BASE=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo main)
    git diff "$BASE"...HEAD --stat
    git diff "$BASE"...HEAD
    ```
 
-5. For each success criterion in PLAN.md, verify against the actual codebase:
+6. For each success criterion in PLAN.md, verify against the actual codebase only when QA did not already verify it with evidence:
 
-   **If QA-REPORT.md exists:** Trust criteria that `/qa` already verified with evidence. Focus on what `/qa` didn't cover.
+   **If QA-REPORT.md exists:** Trust criteria that `/qa` already verified with evidence. In the table, mark those rows as `QA-PASS` and cite the QA evidence instead of re-checking. Focus direct review effort on criteria that are absent, inconclusive, or explicitly failed in QA.
 
-   **Output a verification table:**
+   **If QA-REPORT.md does not exist:** Perform a lightweight goal check from the code and diff. Do not run the full QA suite; suggest `/qa` if runtime confidence is needed.
+
+   **Output a goal check table:**
 
    ```markdown
-   ## Verification
+   ## Goal Check
 
    | # | Criterion | Status | Evidence |
    |---|-----------|--------|----------|
-   | 1 | `refundReason` column exists | PASS | `packages/db/src/schema.ts:47` |
-   | 2 | POST /api/refund accepts `reason` | PASS | `apps/api/src/routes/payments.ts:92` |
-   | 3 | Admin detail shows refund badge | FAIL | Component exists but not imported in `page.tsx` |
+   | 1 | `refundReason` column exists | QA-PASS | `QA-REPORT.md`: schema check passed |
+   | 2 | POST /api/refund accepts `reason` | REVIEW-PASS | `apps/api/src/routes/payments.ts:92` |
+   | 3 | Admin detail shows refund badge | QA-FAIL | `QA-REPORT.md`: component exists but is not imported |
    ```
 
-   **Include file path and line number as evidence.** "PASS" without evidence is not acceptable.
+   **Include file path and line number for direct review evidence.** For QA-derived rows, cite the QA report evidence. "PASS" without evidence is not acceptable.
 
 ## Step 3: Eligibility Check
 
@@ -137,6 +153,7 @@ For issues flagged due to CLAUDE.md, double-check that the CLAUDE.md **actually*
 
 - Pre-existing issues (bugs that existed before this PR)
 - Things that look like bugs but aren't
+- Issues already recorded in `QA-REPORT.md` unless you add new code-level evidence or a different root cause
 - Pedantic nitpicks a senior engineer wouldn't call out
 - Issues a linter, typechecker, or compiler would catch (formatting, imports, type errors, broken tests) — assume CI runs these separately
 - General code quality issues (test coverage, documentation) unless explicitly required in CLAUDE.md
@@ -147,14 +164,18 @@ For issues flagged due to CLAUDE.md, double-check that the CLAUDE.md **actually*
 
 ## Step 7: Report
 
-### For current work (with plan verification):
+### For current work:
 
 ```markdown
 ## Review Results
 
-### Verification: X/Y PASS
+### QA Gate
 
-[Verification table from Step 2]
+<QA-REPORT.md status, open issue count, and whether review continued or stopped>
+
+### Goal Check: X/Y PASS
+
+[Goal check table from Step 2]
 
 ### Code Review: N issues (confidence >= 80)
 
@@ -166,11 +187,11 @@ For issues flagged due to CLAUDE.md, double-check that the CLAUDE.md **actually*
 
 ### Overall Verdict
 
-**PASS** — All criteria met, no blocking issues. Ready for `/pr`.
+**PASS** — QA passed or had no open issues, all uncovered criteria met, and no blocking code review issues. Ready for `/pr`.
 
 or
 
-**NEEDS FIX** — N criteria failed, M issues found.
+**NEEDS FIX** — QA has open issues, N criteria failed, or M code review issues were found.
 ```
 
 ### For external PR review:
@@ -237,6 +258,7 @@ If all criteria PASS and no BLOCK issues:
 ## What This Skill Does NOT Do
 
 - **Does not trust SUMMARY.md.** It reads the actual code.
+- **Does not repeat `/qa`.** It consumes `QA-REPORT.md`, trusts evidenced QA checks, and focuses on uncovered criteria plus diff-only code risks.
 - **Does not check build/typecheck/lint.** Assume CI runs those separately.
 - **Does not review code outside the diff.** Only changed lines.
 - **Does not update docs.** That's `/docs`.

@@ -78,8 +78,9 @@ Each module maps a doc page and code scope:
 | `/import` | Scans existing repo, generates module registry, flags doc gaps |
 | `/build <feature>` | Reads docs + code, surfaces assumptions, creates a plan. You confirm. |
 | `/go` | Executes the plan — fresh subagent per task, atomic commits |
+| `/qa [--fix]` | Runs plan-driven QA and writes `QA-REPORT.md`; `--fix` opts into automatic remediation |
 | `/quick` | Fast path for bug fixes, chores, small changes — skip planning and progress |
-| `/review` | Code review + goal-backward verification against success criteria |
+| `/review` | QA-aware code review — trusts `QA-REPORT.md` evidence and checks diff-only risks |
 | `/docs` | Updates documentation for completed work (only completed, never planned) |
 | `/pr` | Verify, docs check, create PR |
 | `/address-review` | Fetch PR review comments, triage by priority, address approved fixes |

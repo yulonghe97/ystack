@@ -4,18 +4,19 @@ description: >
   Plan-driven QA testing with agentic self-testing as first-class, automated tests next,
   browser testing last (and optional). Develops a QA plan covering project standards
   compliance + feature completeness, spawns parallel sub-agents to execute it, reports
-  issues to QA-REPORT.md, then runs a bug-fixing loop until all issues close.
+  issues to QA-REPORT.md, and optionally runs a bug-fixing loop when requested.
   Use this skill when the user says 'qa', '/qa', 'test it', 'run qa', 'check if it
   works', 'does it build', 'run the checks', or after /go completes. Runs between
-  /go and /review. Optionally accepts a URL for frontend features: '/qa http://localhost:3000'.
+  /go and /review. Use '--fix' to allow automatic fixes. Optionally accepts a URL
+  for frontend features: '/qa http://localhost:3000'.
 compatibility: Designed for Claude Code. Playwright MCP is optional (frontend only).
 metadata:
   user-invocable: "true"
 ---
 
-# /qa — Plan-Driven QA with Bug-Fix Loop
+# /qa — Plan-Driven QA with Optional Fix Loop
 
-You are the QA phase of the ystack agent harness. You produce a QA plan, execute it with parallel sub-agents, report issues, and loop on fixes until everything passes.
+You are the QA phase of the ystack agent harness. You produce a QA plan, execute it with parallel sub-agents, and report issues. You only loop on fixes when remediation is explicitly enabled.
 
 **You verify runtime correctness and standards compliance.** `/review` handles code quality. These are separate concerns.
 
@@ -25,6 +26,12 @@ You are the QA phase of the ystack agent harness. You produce a QA plan, execute
 - `references/qa-plan-template.md` — full QA.md template
 - `references/qa-report-template.md` — full QA-REPORT.md template + status rules
 - `references/subagent-prompts.md` — prompts for standards/test-writing/browser/bug-fix sub-agents
+
+**Invocation options:**
+- `/qa` — plan, execute, and write `QA-REPORT.md`; if issues are found, stop and ask whether to run the fix loop.
+- `/qa --fix` — plan, execute, report, then automatically run the bug-fixing loop for open issues.
+- `/qa --yes` — skip QA plan confirmation only; this does **not** imply `--fix`.
+- `/qa --yes --fix` — skip plan confirmation and allow automatic fixes.
 
 ---
 
@@ -169,7 +176,7 @@ Show the user the QA plan and wait for confirmation:
 
 > Here's the QA plan. <N> agentic self-tests, <M> automated tests to write, <K> browser checks, <H> manual items. Shall I proceed, or adjust the plan?
 
-If they request changes, update QA.md and re-show. Proceed only when confirmed (or if invoked with `--yes`).
+If they request changes, update QA.md and re-show. Proceed only when confirmed (or if invoked with `--yes`). `--yes` only skips plan confirmation; it does not authorize automatic fixes.
 
 ---
 
@@ -192,7 +199,7 @@ Run sequentially in the main context. Use the actual commands you detected, join
 pnpm typecheck && pnpm lint && pnpm build && pnpm test
 ```
 
-Capture output. If any command fails, do NOT spawn Groups B/C/D yet — proceed to Phase 3 to report CI failures first, then enter the bug-fix loop. Getting the CI gauntlet green is the fastest path to a useful signal.
+Capture output. If any command fails, do NOT spawn Groups B/C/D yet — proceed to Phase 3 to report CI failures first. Enter the bug-fixing loop only if `--fix` was provided or the user explicitly confirms remediation. Getting the CI gauntlet green is the fastest path to a useful signal.
 
 ### Running Groups B, C, D in parallel
 
@@ -209,13 +216,24 @@ Aggregate all sub-agent findings into `.context/<feature-id>/QA-REPORT.md` (or `
 Use the template in `references/qa-report-template.md`. It defines the exact structure for issues, resolved issues, passed checks, and human-required items — plus the status transition rules.
 
 Report the count to the user:
-> Found <N> issues (<X> blockers, <Y> major, <Z> minor). Starting fix loop.
+> Found <N> issues (<X> blockers, <Y> major, <Z> minor). QA-REPORT.md is written.
 
-If zero issues found, skip Phase 4 and go to Phase 5.
+If zero issues were found, skip Phase 4 and go to Phase 5.
+
+If issues were found and `--fix` was provided, go to Phase 4.
+
+If issues were found and `--fix` was not provided, stop and ask:
+> Found <N> issues. Run the fix loop now, or leave them in QA-REPORT.md for the implementer?
+
+If the user says yes, go to Phase 4. Otherwise leave the report status as `ISSUES_FOUND` and hand off without modifying code.
 
 ---
 
-## Phase 4: Bug-Fixing Loop
+## Phase 4: Optional Remediation — Bug-Fixing Loop
+
+This phase is **not** part of default `/qa`. Run it only when:
+- the invocation includes `--fix`, or
+- the user explicitly confirms after seeing the QA report.
 
 For each open issue, spawn a sub-agent to fix it. Keep fixes atomic and context-isolated.
 
@@ -241,7 +259,7 @@ max iterations: 3  # Safety: stop looping if same issues keep re-opening
 
 ### Commit hygiene
 
-The bug-fix loop commits atomically per issue. That means a QA pass can produce 5–10 small commits on your branch before `/review` runs. Two things to watch:
+The bug-fix loop commits atomically per issue. Because this can produce multiple commits on the branch, only run it after explicit authorization. Two things to watch:
 
 - If the fixes are clearly noise (typos, comment tweaks), the user may want them squashed. Note this in the final report so `/review` or `/pr` can squash if desired.
 - Never force-push. Never rewrite commits that already exist on the remote.
@@ -267,7 +285,9 @@ After a batch of fixes, re-run the CI gauntlet and any check whose output hinted
 
 ### Final verification pass
 
-Re-run the detected CI gauntlet one more time in the main context. All must pass. If Group A was N/A in Step 3 (no commands detected), skip — but note it in the report.
+If there are no open issues, or if the optional fix loop ran, re-run the detected CI gauntlet one more time in the main context. All must pass for `PASSED`. If Group A was N/A in Step 3 (no commands detected), skip — but note it in the report.
+
+If `/qa` found issues and remediation was not authorized, do not claim `PASSED`; leave `QA-REPORT.md` as `ISSUES_FOUND`.
 
 ### Update QA-REPORT.md header
 
@@ -282,7 +302,7 @@ Re-run the detected CI gauntlet one more time in the main context. All must pass
 
 > QA complete.
 >
-> - Fixed <N> issues across <M> commits
+> - Found <N> issues; fixed <X> across <M> commits (or: fix loop not run)
 > - All detected CI checks passing (or: no CI gauntlet — this repo has none)
 > - <X> human-required items remain (not blockers): see QA-REPORT.md
 >
@@ -302,13 +322,14 @@ If invoked with just a URL or no plan (`/qa http://localhost:3000`):
 4. Ask the user:
    > What should I focus on? (e.g., "all API endpoints", "the checkout flow", "smoke test the homepage")
 5. Build a lightweight QA plan targeting the user's stated focus.
-6. Execute → report → fix loop, same as above.
+6. Execute → report → optional fix loop if `--fix` was provided or the user confirms, same as above.
 
 ---
 
 ## What This Skill Does NOT Do
 
 - **Does not review code quality.** That's `/review`. QA is about runtime correctness and standards compliance.
+- **Does not fix by default.** Automatic remediation only runs with `--fix` or explicit user confirmation after the report.
 - **Does not create PRs.** That's `/pr`.
 - **Does not update docs.** That's `/docs`, which the user should run after QA passes.
 - **Does not require Playwright.** Browser automation is a nice-to-have for frontend features, not a dependency. Backend QA works fully without it.

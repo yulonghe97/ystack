@@ -5,7 +5,7 @@
       "id": 1,
       "name": "bare-slash",
       "prompt": "/qa",
-      "expected_output": "Skill discovers branch state (no PLAN.md), loads project standards, classifies feature type, and either asks user for success criteria or uses the diff as source of truth. Gracefully handles missing pnpm scripts. No real commits.",
+      "expected_output": "Skill discovers branch state (no PLAN.md), loads project standards, classifies feature type, and either asks user for success criteria or uses the diff as source of truth. Gracefully handles missing pnpm scripts. No real commits or automatic fix loop unless --fix is provided.",
       "assertions": [
         "Produced at least one artifact (QA.md, QA-REPORT.md, or a substantive behavior_log.md) — did not silently no-op.",
         "Loaded project context: behavior_log.md cites reading CLAUDE.md, AGENTS.md, or docs/ to derive standards.",
@@ -13,6 +13,7 @@
         "On missing PLAN.md, either (a) asked the user for success criteria, or (b) used the diff as source of truth — did NOT invent criteria.",
         "Gracefully handled absent pnpm scripts — did not claim success or crash on missing commands.",
         "Did not actually commit to the real branch (simulated_commits.md only, or none).",
+        "Did not enter the bug-fixing loop unless the prompt included --fix or the user explicitly confirmed remediation.",
         "Classified feature type (Backend / Frontend / Fullstack / Infrastructure) per Phase 0 Step 3."
       ]
     },

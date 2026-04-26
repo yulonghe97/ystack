@@ -4,10 +4,12 @@
     {
       "id": 1,
       "prompt": "/review",
-      "expected_output": "Reviews current branch changes against the plan. Runs goal-backward verification (does code deliver what PLAN.md promised?) and multi-agent code review with confidence scores.",
+      "expected_output": "Reviews current branch changes against the plan. Consumes QA-REPORT.md when present, trusts QA evidence for covered criteria, carries open QA issues into the verdict, and runs multi-agent code review with confidence scores.",
       "assertions": [
         "The plan (PLAN.md) is read and verified against",
-        "Goal-backward verification checks that success criteria are met",
+        "QA-REPORT.md is read when present and its status is reflected in the review",
+        "Success criteria already verified by QA are not re-tested; they are cited as QA evidence",
+        "Open QA issues are carried into the final verdict rather than re-proved or ignored",
         "Multiple review dimensions are covered (security, correctness, performance)",
         "Each finding includes a confidence score",
         "A summary verdict is provided (pass/fail/conditional)"
@@ -28,10 +30,10 @@
     {
       "id": 3,
       "prompt": "check my work, is this ready to ship?",
-      "expected_output": "Activates review from natural language, performs full verification and code review, and gives a clear ship/no-ship recommendation.",
+      "expected_output": "Activates review from natural language, performs a QA-aware goal check plus code review, and gives a clear ship/no-ship recommendation.",
       "assertions": [
         "The skill activates from the natural language trigger",
-        "Both verification and code review phases run",
+        "Both QA-aware goal check and code review phases run when QA is passed or absent",
         "A clear recommendation is provided (ship or not)",
         "Any blockers are listed with specific file references"
       ]
