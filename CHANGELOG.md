@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.1 — 2026-04-26
+
+### Changed
+
+- README workflow diagrams now include `/qa` between `/go` and `/review` in English and Chinese
+- Workflow diagram `/review` copy now reflects the QA-aware review boundary
+
+### Fixed
+
+- Installed ystack hook runtime files are now added to `.gitignore` via `.claude/hooks/` so host repo linters usually skip them
+- Vendored hook JS files include file-level ESLint and Biome ignore comments as a fallback for repos that explicitly lint `.claude/hooks/`
+
+---
+
 ## 0.3.0 — 2026-04-26
 
 ### Added
