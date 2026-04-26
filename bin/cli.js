@@ -41,15 +41,6 @@ function hashFile(path) {
 	return createHash("sha256").update(content).digest("hex").slice(0, 12);
 }
 
-function commandExists(cmd) {
-	try {
-		execSync(`which ${cmd}`, { stdio: "ignore" });
-		return true;
-	} catch {
-		return false;
-	}
-}
-
 function detectProjectName() {
 	// Try package.json
 	if (existsSync("package.json")) {
@@ -60,21 +51,6 @@ function detectProjectName() {
 	}
 	// Fall back to directory name
 	return process.cwd().split("/").pop();
-}
-
-function detectDocsFramework() {
-	if (existsSync("docs/src/content/_meta.ts")) return { framework: "nextra", root: "docs/src/content" };
-	if (existsSync("content/docs/meta.json")) return { framework: "fumadocs", root: "content/docs" };
-	if (existsSync("docs/_meta.ts")) return { framework: "nextra", root: "docs" };
-	return null;
-}
-
-function detectMonorepo() {
-	if (existsSync("turbo.json")) return "turborepo";
-	if (existsSync("pnpm-workspace.yaml")) return "pnpm";
-	if (existsSync("lerna.json")) return "lerna";
-	if (existsSync("nx.json")) return "nx";
-	return null;
 }
 
 // --- Skill installation ---
@@ -284,110 +260,29 @@ function ensureGitignore(projectRoot) {
 
 async function cmdInit() {
 	const projectRoot = process.cwd();
-	const skillsOnly = flags.includes("--skills-only");
 
 	p.intro("ystack init — agent harness for doc-driven development");
 
-	// --- Step 1: Project name ---
-	const detectedName = detectProjectName();
-	const projectName = handleCancel(await p.text({
-		message: "Project name:",
-		placeholder: detectedName,
-		defaultValue: detectedName,
-	}));
-
-	// --- Step 2: Docs framework ---
-	const detectedDocs = detectDocsFramework();
-	let docsFramework;
-	let docsRoot;
-
-	if (detectedDocs) {
-		const keepDetected = handleCancel(await p.confirm({
-			message: `Detected ${detectedDocs.framework} at ${detectedDocs.root}. Use it?`,
-		}));
-		if (keepDetected) {
-			docsFramework = detectedDocs.framework;
-			docsRoot = detectedDocs.root;
-		}
-	}
-
-	if (!docsFramework) {
-		docsFramework = handleCancel(await p.select({
-			message: "Docs framework:",
-			options: [
-				{ label: "Nextra", value: "nextra" },
-				{ label: "Fumadocs", value: "fumadocs" },
-				{ label: "None — I'll set up docs later", value: "none" },
-			],
-		}));
-
-		if (docsFramework === "nextra") {
-			docsRoot = handleCancel(await p.text({
-				message: "Docs root:",
-				placeholder: "docs/src/content",
-				defaultValue: "docs/src/content",
-			}));
-		} else if (docsFramework === "fumadocs") {
-			docsRoot = handleCancel(await p.text({
-				message: "Docs root:",
-				placeholder: "content/docs",
-				defaultValue: "content/docs",
-			}));
-		} else {
-			docsRoot = null;
-		}
-	}
-
-	// --- Step 3: Runtime ---
-	const runtime = handleCancel(await p.select({
-		message: "Runtime:",
-		options: [
-			{ label: "Claude Code", value: "claude-code" },
-			{ label: "Claude Code (skills only, no hooks)", value: "claude-code-minimal" },
-		],
-	}));
-
-	// --- Step 4: Hooks ---
-	let installHooksFlag = true;
-	if (!skillsOnly && runtime === "claude-code") {
-		installHooksFlag = handleCancel(await p.confirm({
-			message: "Install agent linting hooks?",
-		}));
-	} else if (runtime === "claude-code-minimal") {
-		installHooksFlag = false;
-	}
-
-	// --- Execute ---
 	const s = p.spinner();
-	s.start("Setting up...");
+	s.start("Installing skills and hooks...");
 
 	// Skills
 	mkdirSync(join(projectRoot, ".claude", "skills"), { recursive: true });
 	const result = copySkills(projectRoot, YSTACK_ROOT, true);
 
 	// Hooks
-	if (installHooksFlag) {
-		installHooks(projectRoot, YSTACK_ROOT);
-	}
+	installHooks(projectRoot, YSTACK_ROOT);
 
-	// Config
+	// Minimal config (agent fills in stack details via /create)
 	const ystackDir = join(projectRoot, ".ystack");
 	mkdirSync(ystackDir, { recursive: true });
 	const configPath = join(ystackDir, "config.json");
 	const configExisted = existsSync(configPath);
 	if (!configExisted) {
-		const monorepo = detectMonorepo();
+		const projectName = detectProjectName();
 		const config = {
 			project: projectName,
-			runtime,
-			docs: {
-				root: docsRoot,
-				framework: docsFramework === "none" ? null : docsFramework,
-			},
-			monorepo: {
-				enabled: !!monorepo,
-				...(monorepo ? { tool: monorepo } : {}),
-			},
+			runtime: "claude-code",
 			modules: {},
 			workflow: {
 				plan_checker: true,
@@ -411,21 +306,18 @@ async function cmdInit() {
 
 	// Summary
 	p.log.success(`Skills: ${result.installed} installed, ${result.skipped} skipped`);
-	if (installHooksFlag) {
-		p.log.success("Hooks: context-monitor, workflow-nudge");
-	}
+	p.log.success("Hooks: context-monitor, workflow-nudge");
 	if (configExisted) {
 		p.log.info("Config: .ystack/config.json preserved");
 	} else {
 		p.log.success("Config: created .ystack/config.json");
 	}
-	p.log.success("Progress: .ystack/progress/ ready");
 
 	p.note(
 		[
-			`${cyan("/import")}  — scan codebase and populate module registry`,
+			`${cyan("/create")}  — set up project (recommends stack, adapts to your needs)`,
+			`${cyan("/import")}  — scan existing codebase and populate module registry`,
 			`${cyan("/build")}   — plan a feature`,
-			`${cyan("/scaffold")} — scaffold docs from a plan`,
 		].join("\n"),
 		"Next steps",
 	);
@@ -487,26 +379,6 @@ async function cmdCreate() {
 		process.exit(1);
 	}
 
-	// Parse flags
-	const docsFlag = flags.find((f) => f.startsWith("--docs"));
-	let docsFramework = "nextra";
-	if (docsFlag) {
-		const idx = args.indexOf(docsFlag);
-		const val = docsFlag.includes("=") ? docsFlag.split("=")[1] : args[idx + 1];
-		if (val === "fumadocs" || val === "nextra") {
-			docsFramework = val;
-		} else {
-			console.log(red(`\nUnknown docs framework: ${val}. Use "nextra" or "fumadocs".\n`));
-			process.exit(1);
-		}
-	}
-
-	const fromFlag = flags.find((f) => f.startsWith("--from"));
-	if (fromFlag) {
-		console.log(yellow("\nScaffold integration from plan files is coming soon."));
-		console.log(yellow("Creating base project without plan integration.\n"));
-	}
-
 	const projectDir = resolve(process.cwd(), name);
 
 	if (existsSync(projectDir)) {
@@ -514,115 +386,21 @@ async function cmdCreate() {
 		process.exit(1);
 	}
 
-	p.intro(`ystack create — scaffolding ${name}`);
+	p.intro(`ystack create — ${name}`);
 
-	// --- Create directory structure ---
-	console.log(bold("Creating directories..."));
-	const dirs = [
-		"apps",
-		"packages",
-		"docs/src/content",
-		".claude/skills",
-		".context",
-		".ystack/progress",
-	];
-	for (const dir of dirs) {
-		mkdirSync(join(projectDir, dir), { recursive: true });
-	}
-	console.log(green("  ✓ apps/, packages/, docs/, .claude/, .context/, .ystack/\n"));
+	const s = p.spinner();
+	s.start("Setting up...");
 
-	// --- Generate files ---
-	console.log(bold("Generating config files..."));
+	// Create directory structure
+	mkdirSync(join(projectDir, ".claude", "skills"), { recursive: true });
+	mkdirSync(join(projectDir, ".context"), { recursive: true });
 
-	// Root package.json
-	const rootPkg = {
-		name,
-		version: "0.0.1",
-		private: true,
-		type: "module",
-		scripts: {
-			dev: "turbo dev",
-			build: "turbo build",
-			typecheck: "turbo typecheck",
-			check: "ultracite check",
-			fix: "ultracite fix",
-			clean: "turbo clean",
-		},
-		devDependencies: {
-			turbo: "latest",
-			typescript: "^5.8.0",
-			ultracite: "latest",
-		},
-	};
-	writeFileSync(join(projectDir, "package.json"), JSON.stringify(rootPkg, null, 2) + "\n");
-	console.log(green("  ✓ package.json"));
-
-	// turbo.json
-	const turboConfig = {
-		$schema: "https://turbo.build/schema.json",
-		tasks: {
-			dev: { persistent: true, cache: false },
-			build: { dependsOn: ["^build"] },
-			typecheck: { dependsOn: ["^build"] },
-			clean: { cache: false },
-		},
-	};
-	writeFileSync(join(projectDir, "turbo.json"), JSON.stringify(turboConfig, null, 2) + "\n");
-	console.log(green("  ✓ turbo.json"));
-
-	// pnpm-workspace.yaml
-	const pnpmWorkspace = `packages:
-  - "apps/*"
-  - "packages/*"
-  - "docs"
-`;
-	writeFileSync(join(projectDir, "pnpm-workspace.yaml"), pnpmWorkspace);
-	console.log(green("  ✓ pnpm-workspace.yaml"));
-
-	// tsconfig.json
-	const tsconfig = {
-		compilerOptions: {
-			target: "ES2022",
-			module: "ES2022",
-			moduleResolution: "bundler",
-			lib: ["ES2022"],
-			strict: true,
-			esModuleInterop: true,
-			skipLibCheck: true,
-			forceConsistentCasingInFileNames: true,
-			resolveJsonModule: true,
-			isolatedModules: true,
-			declaration: true,
-			declarationMap: true,
-			sourceMap: true,
-			outDir: "dist",
-		},
-		exclude: ["node_modules", "dist", ".turbo"],
-	};
-	writeFileSync(join(projectDir, "tsconfig.json"), JSON.stringify(tsconfig, null, 2) + "\n");
-	console.log(green("  ✓ tsconfig.json"));
-
-	// biome.json
-	const biomeConfig = {
-		$schema: "https://biomejs.dev/schemas/1.9.4/schema.json",
-		extends: ["ultracite"],
-	};
-	writeFileSync(join(projectDir, "biome.json"), JSON.stringify(biomeConfig, null, 2) + "\n");
-	console.log(green("  ✓ biome.json"));
-
-	// .ystack/config.json
-	const docsRoot = docsFramework === "fumadocs" ? "content/docs" : "docs/src/content";
-	const ystackConfig = {
+	// Minimal .ystack config
+	const ystackDir = join(projectDir, ".ystack");
+	mkdirSync(ystackDir, { recursive: true });
+	const config = {
 		project: name,
 		runtime: "claude-code",
-		docs: {
-			root: docsRoot,
-			framework: docsFramework,
-		},
-		monorepo: {
-			enabled: true,
-			tool: "turborepo",
-		},
 		modules: {},
 		workflow: {
 			plan_checker: true,
@@ -630,335 +408,29 @@ async function cmdCreate() {
 			auto_docs_check: true,
 		},
 	};
-	writeFileSync(join(projectDir, ".ystack/config.json"), JSON.stringify(ystackConfig, null, 2) + "\n");
-	console.log(green("  ✓ .ystack/config.json"));
+	writeFileSync(join(ystackDir, "config.json"), JSON.stringify(config, null, 2) + "\n");
 
-	// .ystack/progress/_overview.md
-	writeFileSync(join(projectDir, ".ystack/progress/_overview.md"), `# Project Progress\n\n## Module Status\n\n| Module | Done | Total | Status |\n|--------|------|-------|--------|\n\n## Ready Front\n\n_No modules registered yet. Run \`/import\` or \`/scaffold\` to get started._\n`);
-	console.log(green("  ✓ .ystack/progress/_overview.md"));
+	// Progress directory
+	const progressDir = join(ystackDir, "progress");
+	mkdirSync(progressDir, { recursive: true });
+	writeFileSync(join(progressDir, "_overview.md"), `# Project Progress\n\n## Module Status\n\n| Module | Done | Total | Status |\n|--------|------|-------|--------|\n\n## Ready Front\n\n_No modules registered yet. Run \`/import\` or \`/scaffold\` to get started._\n`);
 
-	// CLAUDE.md
-	const claudeMd = `# ${name}
-
-This project uses [ystack](https://github.com/yulonghe97/ystack) for doc-driven development.
-
-## Structure
-
-- \`apps/\` — Application packages
-- \`packages/\` — Shared library packages
-- \`docs/\` — Documentation site (${docsFramework})
-
-## Module Registry
-
-Modules are defined in \`.ystack/config.json\`. Each module maps code directories to documentation pages.
-
-## Available Commands
-
-| Command | Description |
-|---------|-------------|
-| \`/import\` | Scan codebase and populate module registry |
-| \`/build <feature>\` | Plan a feature (reads docs + code, surfaces assumptions) |
-| \`/go\` | Execute the plan with fresh subagents |
-| \`/review\` | Code review + goal-backward verification |
-| \`/docs\` | Update documentation for completed work |
-| \`/pr\` | Verify, docs check, create PR |
-
-## Scripts
-
-- \`pnpm dev\` — Start dev servers
-- \`pnpm build\` — Build all packages
-- \`pnpm typecheck\` — Type-check all packages
-- \`pnpm check\` — Lint (ultracite/biome)
-- \`pnpm fix\` — Auto-fix lint issues
-- \`pnpm clean\` — Clean build artifacts
-`;
-	writeFileSync(join(projectDir, "CLAUDE.md"), claudeMd);
-	console.log(green("  ✓ CLAUDE.md"));
-
-	// AGENTS.md — runtime-agnostic context for non-Claude agents
-	const agentsMd = `# ${name}
-
-This project uses [ystack](https://github.com/yulonghe97/ystack) for doc-driven development.
-
-## Structure
-
-- \`apps/\` — Application packages
-- \`packages/\` — Shared library packages
-- \`docs/\` — Documentation site (${docsFramework})
-
-## Module Registry
-
-Modules are defined in \`.ystack/config.json\`. Each module maps code directories to documentation pages.
-
-## Workflow
-
-1. Read the relevant doc page before making changes
-2. Plan before executing — break work into small, verifiable tasks
-3. Verify against success criteria after implementation
-4. Update docs when done — only document completed, verified work
-
-## Scripts
-
-- \`pnpm dev\` — Start dev servers
-- \`pnpm build\` — Build all packages
-- \`pnpm typecheck\` — Type-check all packages
-- \`pnpm check\` — Lint (ultracite/biome)
-- \`pnpm fix\` — Auto-fix lint issues
-- \`pnpm clean\` — Clean build artifacts
-`;
-	writeFileSync(join(projectDir, "AGENTS.md"), agentsMd);
-	console.log(green("  ✓ AGENTS.md"));
-
-	// Per-directory AGENTS.md starters
-	const dirAgentsMd = (dir) => `# ${dir}/
-
-Each package in this directory should have its own AGENTS.md describing:
-
-## Key Files
-
-- Entry point and public API surface
-- Schema or data model files
-- Route handlers or core logic
-
-## Conventions
-
-- Patterns specific to this package (naming, error handling, testing)
-- References to relevant standards or libraries
-
-Keep it short — pointers to code, not explanations of code.
-`;
-	writeFileSync(join(projectDir, "apps/AGENTS.md"), dirAgentsMd("apps"));
-	writeFileSync(join(projectDir, "packages/AGENTS.md"), dirAgentsMd("packages"));
-	console.log(green("  ✓ apps/AGENTS.md, packages/AGENTS.md"));
-
-	// .gitignore
-	const gitignore = `node_modules/
-dist/
-.turbo/
-.next/
-.context/
-.env
-.env.local
-*.tsbuildinfo
-`;
-	writeFileSync(join(projectDir, ".gitignore"), gitignore);
-	console.log(green("  ✓ .gitignore"));
-
-	// .env.example
-	writeFileSync(join(projectDir, ".env.example"), "");
-	console.log(green("  ✓ .env.example"));
-	console.log();
-
-	// --- Docs app ---
-	console.log(bold("Setting up docs app..."));
-
-	if (docsFramework === "nextra") {
-		// docs/package.json
-		const docsPkg = {
-			name: `${name}-docs`,
-			version: "0.0.1",
-			private: true,
-			type: "module",
-			scripts: {
-				dev: "next dev",
-				build: "next build",
-			},
-			dependencies: {
-				next: "^15.0.0",
-				nextra: "^4.0.0",
-				"nextra-theme-docs": "^4.0.0",
-				react: "^19.0.0",
-				"react-dom": "^19.0.0",
-			},
-			devDependencies: {
-				typescript: "^5.8.0",
-				"@types/react": "^19.0.0",
-			},
-		};
-		writeFileSync(join(projectDir, "docs/package.json"), JSON.stringify(docsPkg, null, 2) + "\n");
-		console.log(green("  ✓ docs/package.json"));
-
-		// docs/next.config.ts
-		const nextConfig = `import nextra from "nextra";
-
-const withNextra = nextra({});
-
-export default withNextra({
-	output: "export",
-	images: { unoptimized: true },
-});
-`;
-		writeFileSync(join(projectDir, "docs/next.config.ts"), nextConfig);
-		console.log(green("  ✓ docs/next.config.ts"));
-
-		// docs/tsconfig.json
-		const docsTsconfig = {
-			extends: "../tsconfig.json",
-			compilerOptions: {
-				jsx: "preserve",
-				outDir: "dist",
-				noEmit: true,
-			},
-			include: ["src", "next.config.ts", "next-env.d.ts"],
-			exclude: ["node_modules", ".next"],
-		};
-		writeFileSync(join(projectDir, "docs/tsconfig.json"), JSON.stringify(docsTsconfig, null, 2) + "\n");
-		console.log(green("  ✓ docs/tsconfig.json"));
-
-		// docs/src/content/_meta.ts
-		const metaTs = `export default {
-	index: "Overview",
-};
-`;
-		writeFileSync(join(projectDir, "docs/src/content/_meta.ts"), metaTs);
-		console.log(green("  ✓ docs/src/content/_meta.ts"));
-
-		// docs/src/content/index.mdx
-		const indexMdx = `---
-title: ${name}
----
-
-# ${name}
-
-Welcome to the ${name} documentation.
-
-## Getting Started
-
-This project is set up as a monorepo using Turborepo and pnpm workspaces.
-
-\`\`\`bash
-pnpm install
-pnpm dev
-\`\`\`
-
-## Project Structure
-
-- \`apps/\` — Application packages
-- \`packages/\` — Shared library packages
-- \`docs/\` — This documentation site
-`;
-		writeFileSync(join(projectDir, "docs/src/content/index.mdx"), indexMdx);
-		console.log(green("  ✓ docs/src/content/index.mdx"));
-	} else {
-		// Fumadocs setup
-		// docs/package.json
-		const docsPkg = {
-			name: `${name}-docs`,
-			version: "0.0.1",
-			private: true,
-			type: "module",
-			scripts: {
-				dev: "next dev",
-				build: "next build",
-			},
-			dependencies: {
-				next: "^15.0.0",
-				"fumadocs-core": "latest",
-				"fumadocs-ui": "latest",
-				"fumadocs-mdx": "latest",
-				react: "^19.0.0",
-				"react-dom": "^19.0.0",
-			},
-			devDependencies: {
-				typescript: "^5.8.0",
-				"@types/react": "^19.0.0",
-			},
-		};
-		writeFileSync(join(projectDir, "docs/package.json"), JSON.stringify(docsPkg, null, 2) + "\n");
-		console.log(green("  ✓ docs/package.json"));
-
-		// docs/next.config.ts
-		const nextConfig = `import { createMDX } from "fumadocs-mdx/next";
-
-const withMDX = createMDX();
-
-export default withMDX({});
-`;
-		writeFileSync(join(projectDir, "docs/next.config.ts"), nextConfig);
-		console.log(green("  ✓ docs/next.config.ts"));
-
-		// docs/tsconfig.json
-		const docsTsconfig = {
-			extends: "../tsconfig.json",
-			compilerOptions: {
-				jsx: "preserve",
-				outDir: "dist",
-				noEmit: true,
-			},
-			include: ["src", "next.config.ts", "next-env.d.ts", "content"],
-			exclude: ["node_modules", ".next"],
-		};
-		writeFileSync(join(projectDir, "docs/tsconfig.json"), JSON.stringify(docsTsconfig, null, 2) + "\n");
-		console.log(green("  ✓ docs/tsconfig.json"));
-
-		// For fumadocs, docs content goes under content/docs/ at project root
-		mkdirSync(join(projectDir, "content/docs"), { recursive: true });
-
-		// content/docs/meta.json
-		const metaJson = {
-			title: name,
-			pages: ["index"],
-		};
-		writeFileSync(join(projectDir, "content/docs/meta.json"), JSON.stringify(metaJson, null, 2) + "\n");
-		console.log(green("  ✓ content/docs/meta.json"));
-
-		// content/docs/index.mdx
-		const indexMdx = `---
-title: ${name}
----
-
-# ${name}
-
-Welcome to the ${name} documentation.
-
-## Getting Started
-
-This project is set up as a monorepo using Turborepo and pnpm workspaces.
-
-\`\`\`bash
-pnpm install
-pnpm dev
-\`\`\`
-
-## Project Structure
-
-- \`apps/\` — Application packages
-- \`packages/\` — Shared library packages
-- \`docs/\` — This documentation site
-`;
-		writeFileSync(join(projectDir, "content/docs/index.mdx"), indexMdx);
-		console.log(green("  ✓ content/docs/index.mdx"));
-	}
-	console.log();
-
-	// --- Skills & Hooks ---
-	console.log(bold("Installing skills..."));
-	const skillsResult = copySkills(projectDir, YSTACK_ROOT);
-	console.log(dim(`  ${skillsResult.installed} installed, ${skillsResult.skipped} skipped\n`));
-
-	console.log(bold("Installing hooks..."));
+	// Skills & Hooks
+	const skillsResult = copySkills(projectDir, YSTACK_ROOT, true);
 	installHooks(projectDir, YSTACK_ROOT);
-	console.log(green("  ✓ context-monitor (PostToolUse)"));
-	console.log(green("  ✓ workflow-nudge (PreToolUse on Edit)\n"));
 
-	// --- Git init ---
-	console.log(bold("Initializing git..."));
+	// Git init
 	try {
 		execSync("git init", { cwd: projectDir, stdio: "ignore" });
-		console.log(green("  ✓ git init\n"));
-	} catch {
-		console.log(yellow("  ⚠ git init failed — initialize manually\n"));
-	}
+	} catch { /* user can init manually */ }
 
-	// --- Summary ---
+	s.stop("Ready");
+
 	p.note(
 		[
-			`Monorepo:   Turborepo + pnpm workspaces`,
-			`Linting:    Ultracite (Biome)`,
-			`Docs:       ${docsFramework === "nextra" ? "Nextra 4" : "Fumadocs"}`,
-			`TypeScript: Strict mode, ES2022`,
-			`Skills:     ${skillsResult.installed} ystack skills`,
-			`Hooks:      context-monitor, workflow-nudge`,
+			`Skills:  ${skillsResult.installed} installed`,
+			`Hooks:   context-monitor, workflow-nudge`,
+			`Config:  .ystack/config.json`,
 		].join("\n"),
 		`Created ${name}`,
 	);
@@ -966,8 +438,7 @@ pnpm dev
 	p.note(
 		[
 			`cd ${name}`,
-			"pnpm install",
-			"pnpm dev",
+			`Run ${cyan("/create")} in your coding agent to set up the project`,
 		].join("\n"),
 		"Next steps",
 	);
@@ -980,13 +451,12 @@ function usage() {
 ${bold("ystack")} — agent harness for doc-driven development
 
 ${bold("Commands:")}
-  ${green("init")}              Interactive setup — configure docs, runtime, hooks
-  ${green("init --skills-only")} Install skills only, skip everything else
+  ${green("init")}              Install skills and hooks into an existing project
+  ${green("create <name>")}     Create a new project directory with skills and hooks
   ${green("update")}            Update skills and hooks to latest version
   ${green("remove")}            Remove ystack skills and hooks (keeps data)
-  ${green("create <name>")}     Scaffold a new project with opinionated defaults
-  ${dim("  --docs nextra|fumadocs")}  Choose docs framework (default: nextra)
-  ${dim("  --from plan.md")}          Scaffold integration (coming soon)
+
+${bold("After install, run /create in your coding agent to set up the project.")}
 
 ${bold("Docs:")}
   https://github.com/yulonghe97/ystack

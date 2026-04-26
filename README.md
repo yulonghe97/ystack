@@ -11,14 +11,16 @@
 **[English](./README.md)** | **[中文](./README.zh-CN.md)**
 
 ```bash
-# Interactive setup guide
-npx ystack
+# Skills only (via skills.sh)
+npx skills add yulonghe97/ystack
 
-# New project with opinionated defaults
-npx ystack create my-app
+# Full install — skills + agent linting hooks
+npx ystack init
 
-# Add to an existing project
-cd your-project && npx ystack init
+# New project from scratch
+npx ystack create my-app && cd my-app
+
+# Then run /create in your coding agent to set up the project
 ```
 
 ---
@@ -74,6 +76,7 @@ Each module maps a doc page and code scope:
 
 | Command | What it does |
 |---------|-------------|
+| `/create` | Set up a new or existing project — recommends stack, adapts to your needs |
 | `/scaffold` | Takes a big plan, splits into module doc stubs + diagrams + progress files |
 | `/import` | Scans existing repo, generates module registry, flags doc gaps |
 | `/build <feature>` | Reads docs + code, surfaces assumptions, creates a plan. You confirm. |
@@ -89,16 +92,24 @@ Each module maps a doc page and code scope:
 
 ## Getting Started
 
-```bash
-# New project
-npx ystack create my-app
+### Install
 
-# Existing project
-cd your-project
-npx ystack init
+```bash
+# Option A: skills only (via skills.sh)
+npx skills add yulonghe97/ystack
+
+# Option B: skills + agent linting hooks
+cd your-project && npx ystack init
+
+# Option C: new project from scratch
+npx ystack create my-app && cd my-app
 ```
 
-See [INSTALL.md](./INSTALL.md) for full setup options, prerequisites, and configuration.
+Option A installs just the skills. Options B and C also install [agent linting hooks](./LINTING.md) that enforce the doc-driven workflow (read spec before coding, plan before executing, verify before shipping).
+
+Then run `/create` in your coding agent to set up the project — it recommends a default stack (Turborepo + pnpm + TypeScript + Ultracite + Nextra) but adapts to whatever you prefer.
+
+See [INSTALL.md](./INSTALL.md) for full setup options and configuration.
 
 ## Documentation
 

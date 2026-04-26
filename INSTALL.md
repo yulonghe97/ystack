@@ -2,289 +2,81 @@
 
 > **Note:** v0.1 supports Claude Code only. Multi-runtime support (Cursor, Codex, etc.) is planned for a future version. See [RUNTIMES.md](./RUNTIMES.md).
 
-## Two Paths
-
-| Path | Command | For |
-|------|---------|-----|
-| **New project** | `npx ystack create` | Start from scratch with opinionated defaults |
-| **Existing project** | `npx ystack init` | Add ystack to a repo that already has code |
-
----
-
-## New Project: `npx ystack create`
-
-Creates a fully configured project with opinionated defaults.
+## Install
 
 ```bash
-# Minimal — empty project with full tooling
-npx ystack create my-app
+# Option A: skills only (via skills.sh)
+npx skills add yulonghe97/ystack
 
-# Choose docs framework
-npx ystack create my-app --docs nextra
-npx ystack create my-app --docs fumadocs
+# Option B: skills + agent linting hooks
+cd your-project && npx ystack init
 
-# From a plan — scaffold modules from a markdown plan (coming soon)
-npx ystack create my-app --from plan.md
+# Option C: new project from scratch
+npx ystack create my-app && cd my-app
 ```
 
-### What Gets Created
+**Option A** installs just the skills — good if you want the workflow without the hooks.
+
+**Options B and C** also install [agent linting hooks](./LINTING.md) that enforce the doc-driven workflow (read spec before coding, plan before executing, verify before shipping).
+
+Then open your coding agent and run `/create` to finish setup.
+
+### What gets installed
 
 ```
-my-app/
-├── apps/                        # Application packages (empty, ready for apps)
-├── packages/                    # Library packages (empty, ready for shared code)
-├── docs/                        # Nextra docs site
-│   ├── src/
-│   │   └── content/
-│   │       ├── _meta.ts         # Top-level navigation
-│   │       └── index.mdx        # Project overview
-│   ├── next.config.ts
-│   ├── package.json
-│   └── tsconfig.json
-├── .ystack/                     # ystack config and progress tracking
-│   ├── config.json             # Module registry
-│   ├── progress/               # Progress files per module
+your-project/
 ├── .claude/
-│   ├── skills/                  # ystack skills installed
-│   │   ├── build/SKILL.md
-│   │   ├── go/SKILL.md
-│   │   ├── review/SKILL.md
-│   │   ├── docs/SKILL.md
-│   │   └── pr/SKILL.md
-│   ├── rules/                   # Agent lint rules
-│   └── settings.json            # Hooks configured
-├── .context/                    # (gitignored) ephemeral working files
-├── biome.json                   # Ultracite (Biome) config
-├── turbo.json                   # Turborepo pipeline config
-├── pnpm-workspace.yaml          # pnpm workspace definition
-├── package.json                 # Root package with shared scripts
-├── tsconfig.json                # Root TypeScript config
-├── CLAUDE.md                    # AI context for Claude Code
-├── AGENTS.md                    # AI context for other agents
-├── .gitignore
-└── .env.example
-```
-
-### Default Stack
-
-| Tool | Version | Role |
-|------|---------|------|
-| **Turborepo** | Latest | Monorepo task orchestration — build, typecheck, lint across packages |
-| **pnpm** | Latest | Package management with workspace support |
-| **Ultracite** | Latest | Code linting and formatting (Biome under the hood) |
-| **Nextra 4** or **Fumadocs** | Latest | Documentation site — App Router, MDX, renders docs as browsable site. Nextra is the default; use `--docs fumadocs` for Fumadocs. |
-| **TypeScript** | 5.8+ | Strict mode, project references |
-
-### Root `package.json` Scripts
-
-```json
-{
-  "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "typecheck": "turbo typecheck",
-    "check": "ultracite check",
-    "fix": "ultracite fix",
-    "clean": "turbo clean"
-  }
-}
-```
-
-### Root `turbo.json`
-
-```json
-{
-  "$schema": "https://turbo.build/schema.json",
-  "tasks": {
-    "dev": { "persistent": true, "cache": false },
-    "build": { "dependsOn": ["^build"] },
-    "typecheck": { "dependsOn": ["^build"] },
-    "clean": { "cache": false }
-  }
-}
-```
-
-### With `--from plan.md`
-
-When you provide a plan file, `npx ystack create` also runs the `/scaffold` logic:
-
-1. Parses the plan for modules, features, and connections
-2. Creates a package directory per module under `apps/` or `packages/`
-3. Scaffolds doc pages per module (`docs/src/content/<module>/`)
-4. Generates system architecture diagram (Mermaid)
-5. Creates `.ystack/config.json` with module registry entries
-6. Creates progress files per module with feature checklists
-7. Sets up inter-module dependencies via `depends-on:` annotations
-
-**Example plan.md input:**
-
-```markdown
-# MyApp
-
-## Modules
-
-### Auth
-- Email/password login
-- OAuth (Google, GitHub)
-- Session management
-- Connects to: Database, API
-
-### Payments
-- Stripe integration
-- Wallet with balance
-- Connects to: Auth, Database, API
-
-### Dashboard
-- User overview
-- Usage charts
-- Connects to: Auth, Payments, API
-```
-
-**What gets generated (in addition to base setup):**
-
-```
-my-app/
-├── apps/
-│   └── api/                     # Detected from connections
-│       └── package.json
-├── packages/
-│   ├── auth/
-│   │   └── package.json
-│   ├── payments/
-│   │   └── package.json
-│   └── db/                      # Detected from "Database" references
-│       └── package.json
-├── docs/src/content/
-│   ├── _meta.ts                 # Updated with module entries
-│   ├── index.mdx                # System overview with architecture diagram
-│   ├── auth/
-│   │   ├── _meta.ts
-│   │   └── index.mdx            # Auth overview with feature stubs
-│   ├── payments/
-│   │   ├── _meta.ts
-│   │   └── index.mdx            # Payments overview with feature stubs
-│   └── dashboard/
-│       ├── _meta.ts
-│       └── index.mdx            # Dashboard overview with feature stubs
+│   ├── skills/                  # ystack skills
+│   │   ├── create/SKILL.md      # Project setup (stack choices, configs)
+│   │   ├── build/SKILL.md       # Plan a feature
+│   │   ├── go/SKILL.md          # Execute a plan
+│   │   ├── scaffold/SKILL.md    # Scaffold docs from a plan
+│   │   ├── import/SKILL.md      # Scan existing codebase
+│   │   ├── review/SKILL.md      # Code review + verification
+│   │   ├── docs/SKILL.md        # Update docs for completed work
+│   │   ├── pr/SKILL.md          # Create PR
+│   │   ├── quick/SKILL.md       # Fast path for small changes
+│   │   └── address-review/SKILL.md
+│   ├── hooks/                   # Agent linting hooks
+│   └── settings.json            # Hook configuration
 ├── .ystack/
-│   ├── config.json              # Populated module registry
-│   └── progress/                # Progress files per module
+│   ├── config.json              # Module registry (empty until /create or /import)
+│   └── progress/                # Progress tracking
+└── .context/                    # (gitignored) ephemeral working files
 ```
 
----
+### What `/create` does
 
-## Existing Project: `npx ystack init`
+The `/create` skill runs interactively in your coding agent. It:
 
-Adds ystack to a repo that already has code, docs, or both.
+1. Detects whether this is a blank repo or existing project
+2. **Blank repo:** proposes the default stack, lets you override any choice, generates all project files
+3. **Existing project:** detects what's there, adds ystack conventions without overwriting
 
-```bash
-cd your-project
+#### Default stack (recommended)
 
-# Auto-detect runtimes
-npx ystack init
+| Tool | Role |
+|------|------|
+| **Turborepo** | Monorepo task orchestration |
+| **pnpm** | Package management with workspaces |
+| **TypeScript** | Strict mode, ES2022 |
+| **Ultracite** | Code linting and formatting (Biome) |
+| **Nextra 4** | Documentation site |
 
-# Specify runtimes (planned — --runtime flag not yet implemented)
-npx ystack init --runtime claude-code --runtime cursor
-
-# Minimal — skills only, skip tooling checks
-npx ystack init --skills-only
-```
-
-### What It Does
-
-1. **Detect environment:**
-   - Monorepo? (Turborepo, Nx, Lerna, plain workspaces)
-   - Docs framework? (Nextra, Fumadocs, Docusaurus, VitePress, plain markdown)
-   - Linter? (Ultracite/Biome, ESLint, none)
-   - AI runtimes? (Claude Code, Cursor, Copilot, etc.)
-
-2. **Install skills** for detected runtimes:
-   - Claude Code → `.claude/skills/`, hooks in `.claude/settings.json`
-   - Cursor → `.cursor/rules/*.mdc` (planned — not yet implemented)
-   - Codex → appends to `AGENTS.md` (planned — not yet implemented)
-   - etc. (see [RUNTIMES.md](./RUNTIMES.md) — multi-runtime support is planned)
-
-3. **Create `.ystack/config.json`** with detected settings:
-   ```json
-   {
-     "docs": {
-       "root": "docs/src/content",
-       "framework": "nextra"
-     },
-     "monorepo": {
-       "enabled": true,
-       "tool": "turborepo"
-     },
-     "modules": {}
-   }
-   ```
-
-4. **Create `.ystack/progress/`** directory with `_overview.md` template
-
-5. **Add to `.gitignore`:**
-   ```
-   .context/
-   ```
-
-6. **Suggest next steps:**
-   ```
-   ystack installed successfully.
-
-   Next:
-   → Run /import to scan your codebase and populate the module registry
-   → Or manually add modules to .ystack/config.json
-
-   Detected: Turborepo monorepo, Nextra docs, Ultracite linter, Claude Code
-   Skills installed: .claude/skills/build, go, review, docs, pr
-   ```
-
-### What It Does NOT Do
-
-- Does not install Turborepo, Ultracite, or Nextra (use `create` for that)
-- Does not modify existing configs (biome.json, turbo.json, etc.)
-- Does not overwrite existing `.claude/` or `.cursor/` files (merges only)
-- Does not auto-run `/import` (suggests it, lets you decide)
+The agent adapts if you want something different — npm instead of pnpm, Vite instead of Turbo, Fumadocs instead of Nextra, etc.
 
 ---
 
 ## Updating
 
 ```bash
-# Update skills to latest version
 npx ystack update
-
-# What happens:
-# 1. Pulls latest core prompts
-# 2. Re-applies adapters for detected runtimes
-# 3. Preserves project customizations in .ystack/config.json
-# 4. Merges hook changes (doesn't overwrite custom hooks)
-# 5. Shows changelog of what changed
 ```
-
-### Customization Preservation
-
-When you customize a skill (edit a SKILL.md), ystack tracks this. On update:
 
 - **Unmodified skills** — replaced with latest version
-- **Modified skills** — flagged, not overwritten. Shows diff so you can merge manually
-- **Custom rules** in `.ystack/config.json` — always preserved
-- **Custom hooks** — always preserved
-
----
-
-## Adding a Runtime (Planned — not yet implemented)
-
-> **Status:** The `ystack add --runtime` command does not exist yet. Multi-runtime support is planned for a future version.
-
-```bash
-# Add Cursor support to existing ystack project (planned)
-npx ystack add --runtime cursor
-
-# What happens (planned):
-# 1. Reads core prompts (already installed)
-# 2. Applies cursor adapter → .cursor/rules/*.mdc
-# 3. Does not duplicate or modify Claude Code skills
-```
+- **Modified skills** — flagged, not overwritten
+- **Hooks** — updated
+- **Config** (`.ystack/config.json`) — always preserved
 
 ---
 
@@ -292,43 +84,18 @@ npx ystack add --runtime cursor
 
 ```bash
 npx ystack remove
-
-# What happens:
-# 1. Removes .claude/skills/ystack-* (only ystack skills)
-# 2. Removes ystack hooks from .claude/settings.json
-# 3. Removes .cursor/rules/ystack-* (if present)
-# 4. Keeps .ystack/ (your config and progress files)
-# 5. Keeps docs/ (your documentation)
 ```
 
-Skills and hooks are removed. Your data (.ystack/, docs) is never touched.
+Removes skills and hooks. Your data (`.ystack/`, docs) is never touched.
 
 ---
 
 ## Prerequisites
 
-### Required
-
 | Tool | How to install | Why |
 |------|---------------|-----|
-| **Node.js** 20+ | [nodejs.org](https://nodejs.org) | Runs the installer and Nextra |
-| **pnpm** | `npm install -g pnpm` | Workspace package management |
-
-### Included in `create` (not required for `init`)
-
-| Tool | Installed by | Role |
-|------|-------------|------|
-| **Turborepo** | `pnpm add -D turbo` | Monorepo task runner |
-| **Ultracite** | `pnpm add -D ultracite` | Code linting (Biome) |
-| **Nextra 4** | `pnpm add nextra nextra-theme-docs` | Documentation site |
-
-### Optional
-
-| Tool | Why you'd want it |
-|------|------------------|
-| **Claude Code** | Tier 1 runtime — full subagent + hook support |
-| **Cursor** | Tier 2 runtime — inline execution |
-| **Codex** | Tier 2 runtime — inline execution |
+| **Node.js** 20+ | [nodejs.org](https://nodejs.org) | Runs the CLI |
+| **Claude Code** | [claude.ai/code](https://claude.ai/code) | Runs the skills |
 
 ---
 
@@ -337,30 +104,33 @@ Skills and hooks are removed. Your data (.ystack/, docs) is never touched.
 ### New project from scratch
 
 ```bash
-# Create project
 npx ystack create my-app
-
-# Enter project
 cd my-app
 
-# Install dependencies
-pnpm install
+# Open your coding agent, then:
+/create
+# → sets up project with recommended stack
 
-# Start developing
-# (open Claude Code or your preferred agent)
+/scaffold
+# → scaffold docs from a plan
+
 /build implement user authentication
+# → plan the first feature
 ```
 
 ### Existing project
 
 ```bash
-# Add ystack to your repo
 cd your-project
 npx ystack init
 
-# Scan codebase and populate module registry
-/import
+# Open your coding agent, then:
+/create
+# → detects your stack, adds ystack conventions
 
-# Start building
+/import
+# → scan codebase and populate module registry
+
 /build add refund reason to payments
+# → start building
 ```
