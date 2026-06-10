@@ -82,8 +82,9 @@ ystack 让你的文档站成为人类和 Agent 共享的唯一事实来源。
 | `/quick` | 快速通道：用于 bug 修复、杂务、小改动 — 跳过规划与进度 |
 | `/review` | 感知 QA 的代码审查 — 信任 `QA-REPORT.md` 证据，检查 diff 级风险 |
 | `/docs` | 为已完成的工作更新文档（仅已完成，绝不写"计划中"） |
-| `/pr` | 验证、文档检查、创建 PR |
+| `/pr [--base <branch>]` | 验证、文档检查、创建 PR；`--base` 覆写目标分支（默认为仓库默认分支）|
 | `/address-review` | 获取 PR 审查评论，按优先级分类，处理已批准的修复 |
+| `/yolo [--base <branch>]` | 自主端到端 — `/goal` 规划加上完整的 `/build → /go → /qa → /review → /docs → /pr` 链路，一次性产出草稿 PR（`--base` 指定目标分支）|
 
 ---
 

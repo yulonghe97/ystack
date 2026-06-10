@@ -82,8 +82,9 @@ Each module maps a doc page and code scope:
 | `/quick` | Fast path for bug fixes, chores, small changes — skip planning and progress |
 | `/review` | QA-aware code review — trusts `QA-REPORT.md` evidence and checks diff-only risks |
 | `/docs` | Updates documentation for completed work (only completed, never planned) |
-| `/pr` | Verify, docs check, create PR |
+| `/pr [--base <branch>]` | Verify, docs check, create PR; `--base` overrides the target branch (default: repo default) |
 | `/address-review` | Fetch PR review comments, triage by priority, address approved fixes |
+| `/yolo [--base <branch>]` | Autonomous end-to-end — `/goal` planning plus the full `/build → /go → /qa → /review → /docs → /pr` chain to a draft PR (`--base` sets the PR's target branch) |
 
 ---
 
