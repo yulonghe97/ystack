@@ -55,18 +55,19 @@ misdiagnosis is the most common way an autonomous run goes wrong.
 
 Lead with Claude Code's `/goal` to capture the goal, the approach, and the trade-offs,
 then run ystack's `/build` to turn it into a module-scoped plan. `/build` writes
-`.context/<feature>/PLAN.md` and `DECISIONS.md` with goal-backward success criteria and
-an explicit **no-over-engineering** stance (inline vs. helper, where the source of truth
-lives).
+`.context/<feature>/BRIEF.md` (plain-English summary for the human reviewer) plus
+`PLAN.md` and `DECISIONS.md` with goal-backward success criteria and an explicit
+**no-over-engineering** stance (inline vs. helper, where the source of truth lives).
 
 Proceed once the plan is written. Pause and ask **only** if the design is genuinely
 ambiguous (two reasonable architectures with materially different blast radius).
 
 ## Phase 3 — Build (`/go`)
 
-Run `/go`. Implement the plan as **atomic, scoped commits**, one per task. Follow the
-plan; if reality deviates, follow `/go`'s deviation rules rather than silently changing
-the approach.
+Run `/go`. Implement the plan task by task, leaving all changes **uncommitted in the
+working tree** — `/go` never commits; the single feature commit is created later by
+`/pr`. Follow the plan; if reality deviates, follow `/go`'s deviation rules rather than
+silently changing the approach.
 
 ## Phase 4 — Verify (`/qa`)
 
@@ -89,17 +90,18 @@ stay aligned. Never document planned or in-progress work — ystack's hard rule.
 
 ## Phase 7 — PR (`/pr`, draft)
 
-Run `/pr`. Open a **draft** PR off a feature branch targeting the repo's default branch
-(resolved dynamically, e.g. `git symbolic-ref refs/remotes/origin/HEAD`). If the user
-passed `--base <branch>` to `/yolo`, forward it as `/pr --base <branch>` so the PR targets
-that branch instead (e.g. `--base staging`). Write a clear English title (Conventional
-Commits) and body (summary, changes, verification, test plan), and proactively answer the
-review questions you can predict.
+Run `/pr`. It creates the **single feature commit** from the working tree, then opens a
+**draft** PR off a feature branch targeting the repo's default branch (resolved
+dynamically, e.g. `git symbolic-ref refs/remotes/origin/HEAD`). If the user passed
+`--base <branch>` to `/yolo`, forward it as `/pr --base <branch>` so the PR targets that
+branch instead (e.g. `--base staging`). Write a clear English title (Conventional
+Commits) and a body in `/pr`'s What / Why / Scope / How-to-check shape sourced from
+`BRIEF.md`, and proactively answer the review questions you can predict.
 
 ## Phase 8 — Hand back
 
-Stop. Summarize what shipped — feature, commits, files changed, verification status, PR
-URL — and surface only the decisions that still need a human.
+Stop. Summarize what shipped — feature, the commit, files changed, verification status,
+PR URL — and surface only the decisions that still need a human.
 
 ---
 
@@ -108,7 +110,8 @@ URL — and surface only the decisions that still need a human.
 - **Branch off and target the default branch** (or the `--base <branch>` you were given).
   Never commit to or push the base / release branch directly. `/yolo` ends at a **draft**
   PR — never a merge.
-- **Atomic commits**, scoped per task.
+- **One commit per feature**, created by `/pr`. `/go` and `/qa --fix` never run
+  `git add`/`git commit`.
 - **Never mark a phase done with failing tests or typecheck.** The `/qa` gate is hard.
 - **Read-only data access** unless the user explicitly authorizes writes.
 - **Hand back on credentialed or external actions** — payment/billing, production data,

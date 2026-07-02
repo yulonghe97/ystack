@@ -2,7 +2,7 @@
 name: go
 description: >
   Execute a plan created by /build. Runs each task with a fresh subagent, produces
-  atomic commits, and updates progress files. Use this skill when the user says
+  no commits (those happen at `/pr`), and updates progress files. Use this skill when the user says
   'go', '/go', 'execute', 'run the plan', 'execute the plan', 'start building',
   'let's do it', or confirms a plan and wants to proceed with implementation.
   Requires a PLAN.md from a prior /build run.
@@ -13,9 +13,11 @@ metadata:
 
 # /go — Execute the Plan
 
-You are the execution phase of the ystack agent harness. You take a PLAN.md produced by `/build` and execute each task, producing atomic commits per task.
+You are the execution phase of the ystack agent harness. You take a PLAN.md produced by `/build` and execute each task. Changes land in the working tree only — **`/go` never commits**. Committing is a human decision and happens at `/pr` time, after the user has had a chance to review the diff.
 
 **Your job is to implement, not to redesign.** Follow the plan. If something doesn't work as planned, follow the deviation rules — don't silently change the approach.
+
+**Never run `git commit`, `git add`, `git stash`, or any other state-changing git command.** Read-only git commands (`git status`, `git diff`) are fine for orientation. If you find yourself reaching for `git commit`, stop — that's `/pr`'s job.
 
 ## Phase 0: Load the Plan
 
@@ -100,33 +102,13 @@ Run the task's `Verify:` step. Common verification patterns:
 
 If verification fails, fix the issue and re-verify. Do not skip verification.
 
-**Step 4: Commit**
+**Step 4: Update progress (no commit)**
 
-Create an atomic commit for this task. Use Conventional Commits format:
-
-```
-<type>(<scope>): <description>
-```
-
-Where:
-- `type` = `feat`, `fix`, `refactor`, `chore`, `test` (match the nature of the change)
-- `scope` = the package or module affected (e.g., `db`, `api`, `admin`, `shared`)
-- `description` = what changed, in imperative mood
-
-Stage the code files AND the progress file together, then commit as one atomic operation:
-
-```bash
-git add <code-files> .ystack/progress/<module>.md
-git commit -m "<type>(<scope>): <description>"
-```
-
-**Step 5: Update progress (before committing)**
-
-Before running `git commit` in Step 4, update the module's progress file at `.ystack/progress/<module>.md`:
+Update the module's progress file at `.ystack/progress/<module>.md`:
 - Check the box for the completed feature: `- [ ]` → `- [x]`
 - Add a row to the Decisions table if any implementation decisions were made
 
-The progress update and code change are staged and committed together — one commit includes both.
+Leave the change in the working tree alongside the code. **Do not commit.** `/pr` stages and commits everything (code, progress, and any docs touched) as one atomic commit when the user is ready to ship.
 
 ### Subagent execution (Tier 1 runtimes)
 
@@ -151,17 +133,17 @@ During execution, you may encounter situations the plan didn't anticipate. Follo
 ### Rule 1: Auto-fix — Minor bugs in existing code
 > While modifying `payments.ts`, you notice an unused import.
 
-**Action:** Fix it silently. Include in the same commit. Not worth stopping for.
+**Action:** Fix it silently. Note it in the execution summary. Not worth stopping for.
 
 ### Rule 2: Auto-fix — Missing critical functionality
 > The task says "add Zod validation" but the file doesn't import Zod yet.
 
-**Action:** Add the import. This is implied by the task. Include in the same commit.
+**Action:** Add the import. This is implied by the task.
 
 ### Rule 3: Auto-fix — Blocking issues in adjacent code
 > The task depends on a type that has a typo in its definition, causing typecheck to fail.
 
-**Action:** Fix the typo. Note it in the commit message. It's blocking your task.
+**Action:** Fix the typo. Note it in the execution summary so `/pr` can mention it in the commit body. It's blocking your task.
 
 ### Rule 4: STOP — Architectural decisions
 > The task says "add column to transactions table" but you discover transactions is actually a view, not a table.
@@ -191,23 +173,28 @@ After all tasks complete (or if execution stops due to a deviation), report:
 ## Execution Summary
 
 ### Completed
-- task-1: Schema and types ✓ (commit: abc1234)
-- task-2: API endpoint ✓ (commit: def5678)
-- task-3: Admin UI ✓ (commit: ghi9012)
+- task-1: Schema and types ✓
+- task-2: API endpoint ✓
+- task-3: Admin UI ✓
+
+### Files changed
+<output of `git status --short` — uncommitted changes left for /pr to commit>
 
 ### Verification
 - pnpm typecheck: PASS
 - pnpm check: PASS
 
 ### Notes
-- [Any deviations, auto-fixes, or observations worth mentioning]
+- [Any deviations, auto-fixes, or observations worth mentioning. These feed
+  the /pr commit body.]
 
 ### Next Steps
 - Run /review to verify against success criteria
 - Run /docs if documentation needs updating
+- Run /pr — it will create the single commit for this feature
 ```
 
-Write this summary to `.context/<feature-id>/SUMMARY.md`.
+Write this summary to `.context/<feature-id>/SUMMARY.md`. **The working tree stays dirty.** That's intentional — `/pr` reads it, asks the user, then commits.
 
 ---
 
@@ -218,3 +205,4 @@ Write this summary to `.context/<feature-id>/SUMMARY.md`.
 - **Does not update docs.** That's `/docs`.
 - **Does not create PRs.** That's `/pr`.
 - **Does not skip verification.** Every task's Verify step must run.
+- **Does not commit, stage, stash, or otherwise mutate git state.** Leaves the working tree dirty for `/pr`.

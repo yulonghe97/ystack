@@ -45,7 +45,7 @@ SCOPE REDUCTION DETECTED:
 
 Each task should:
 - Touch 1-5 files (flag if more)
-- Correspond to a single atomic commit
+- Correspond to a single atomic unit of work (sized like a commit, even though `/go` no longer commits per task — `/pr` rolls the feature into one commit)
 - Be executable by a fresh agent with no prior context
 
 Flag oversized tasks:

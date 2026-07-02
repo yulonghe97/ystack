@@ -77,7 +77,7 @@ Each module maps a doc page and code scope:
 | `/scaffold` | Takes a big plan, splits into module doc stubs + diagrams + progress files |
 | `/import` | Scans existing repo, generates module registry, flags doc gaps |
 | `/build <feature>` | Reads docs + code, surfaces assumptions, creates a plan. You confirm. |
-| `/go` | Executes the plan — fresh subagent per task, atomic commits |
+| `/go` | Executes the plan — fresh subagent per task; leaves changes uncommitted for `/pr` |
 | `/qa [--fix]` | Runs plan-driven QA and writes `QA-REPORT.md`; `--fix` opts into automatic remediation |
 | `/quick` | Fast path for bug fixes, chores, small changes — skip planning and progress |
 | `/review` | QA-aware code review — trusts `QA-REPORT.md` evidence and checks diff-only risks |

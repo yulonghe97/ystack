@@ -54,17 +54,14 @@ These are the prompts the QA skill uses when dispatching work to sub-agents. Ada
 > 1. Read the relevant source file(s).
 > 2. Make the minimal fix.
 > 3. Run the verifying check: `<exact command from the issue>`.
-> 4. If the check passes, commit atomically:
->    ```bash
->    git add <files>
->    git commit -m "fix(<scope>): <description>"
->    ```
+> 4. Leave the fix in the working tree alongside the rest of the feature. **Do not commit** — `/pr` rolls all of `/go`'s and `/qa --fix`'s changes into one atomic commit for the feature.
 > 5. Return JSON:
 >    ```json
->    {"fixed": true|false, "commit_sha": "<sha>", "verification_output": "<last 20 lines>", "notes": "<anything unusual>"}
+>    {"fixed": true|false, "files_changed": ["<path>", "..."], "verification_output": "<last 20 lines>", "notes": "<anything unusual>"}
 >    ```
 >
 > Constraints:
 > - Do NOT fix unrelated issues.
 > - Do NOT refactor beyond the minimum.
+> - Do NOT commit, stage, or otherwise mutate git state.
 > - Max 3 attempts before returning `{fixed: false}`.
