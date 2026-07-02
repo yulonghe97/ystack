@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.5.0 — Unreleased
+
+### Added
+
+- **`/build` Phase 4 `BRIEF.md`** — one-page, plain-English summary for the human reviewer. Splits the planning artifacts by audience: `BRIEF.md` for humans, `DECISIONS.md` + `PLAN.md` for `/go`. `BRIEF.md` ends with a "Details for `/go`" footer linking to the two agent files with a one-liner each, so reviewers can drill in without leaving the brief.
+
+### Changed
+
+- **`/build` output formats tightened** — `DECISIONS.md` drops the "Claude's Discretion" section and renders Sources as a single dot-separated line. `PLAN.md` tasks now use a heading-style `### N. Title — \`path\`` with `*(needs N)*` inline dependencies and a single concrete `Verify:` line. Aimed at scan-in-60s human review.
+- **`/pr` body format** — replaced the four-section `Summary / Changes / Verification / Test Plan` template with `What / Why / Scope / How to check`, sourced from `BRIEF.md`. PR body no longer mirrors `PLAN.md` line-by-line; it mirrors the brief.
+- **`/yolo` aligned with the new commit model** — Phase 3 no longer instructs per-task atomic commits; `/pr` creates the single feature commit and the PR body follows the new shape. `/build` phase now lists `BRIEF.md` among its outputs.
+- **README command tables and workflow/architecture diagrams** (English and Chinese) updated to reflect that `/go` leaves changes uncommitted and `/pr` commits once per feature.
+
+### Removed
+
+- **Plan preview HTML build** — `skills/build/templates/plan-preview.html`, `references/plan-preview-style.md`, and `references/plan-preview-checklist.md` are deleted. The HTML preview phase, its checklist, and the "open preview" step are removed from `/build`. `BRIEF.md` is the new review surface.
+- **All auto-commits during execution.** `/go` no longer runs `git add` or `git commit` at any point. `/qa --fix` no longer commits per fix. Both skills execute, verify, and leave everything in the working tree. The commit (one per feature) is created by `/pr` after the user reviews the diff.
+
+### Migration
+
+- Existing in-flight features with a `.context/<feature>/plan.html` can ignore the file — `/go` never read it. Future `/build` runs won't produce one.
+- No changes required to `DECISIONS.md` / `PLAN.md` already on disk; the new formats are conventions for newly generated files.
+- **Workflow impact:** after `/go` finishes, `git status` will show dirty. That is the new expected state. Run `/pr` (or `git diff` to inspect) before committing. If you want to commit manually before running `/pr`, that's fine — `/pr` detects an already-committed branch and skips its commit step.
+
+---
+
 ## 0.4.0 — 2026-06-10
 
 ### Added
