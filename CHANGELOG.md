@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.0 — 2026-06-10
+
+### Added
+
+- **`/yolo` skill** — autonomous end-to-end run that orchestrates `/goal` planning plus the full ystack chain (`/build → /go → /qa → /review → /docs → /pr`) from investigation to a **draft** PR in one pass, without stopping between phases. Defers to each command's own spec rather than re-implementing them; stops at a draft PR (never merges) and hands back on credentialed/external actions.
+- **`/pr --base <branch>`** — override the PR's target branch (e.g. `--base staging`); defaults to the repo's default branch resolved dynamically. `/yolo` forwards it to `/pr`.
+
+### Changed
+
+- README command tables (English and Chinese) document `/yolo`
+- Workflow diagrams (English and Chinese) show `/yolo` as an autonomous side-path alongside `/quick`
+
+---
+
 ## 0.3.1 — 2026-04-26
 
 ### Changed

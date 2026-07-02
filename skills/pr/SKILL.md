@@ -14,6 +14,14 @@ metadata:
 
 You are the final step of the ystack workflow. You verify everything is ready, then create a pull request.
 
+## Arguments
+
+- `--base <branch>` — the PR's **target branch** (what it merges into). Overrides the
+  default-branch auto-detection. Example: `/pr --base staging`. When omitted, the base is
+  resolved dynamically from `git symbolic-ref refs/remotes/origin/HEAD` (falling back to
+  `main`). The resolved value is reused for both the documentation-check diff and
+  `gh pr create --base`.
+
 ## Phase 0: Pre-flight Checks
 
 Run all checks before creating the PR. If any fail, stop and report.
@@ -33,8 +41,9 @@ If a PLAN.md exists, check whether all success criteria have been verified. If n
 Detect if code changes affect documented modules:
 
 ```bash
-# Resolve the repo's default branch dynamically
-BASE=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo main)
+# Target branch (BASE): the --base <branch> argument if the user gave one (ARG_BASE),
+# otherwise the repo's default branch resolved dynamically.
+BASE="${ARG_BASE:-$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo main)}"
 
 # Get changed files
 git diff "$BASE"...HEAD --stat
@@ -80,7 +89,7 @@ All changes should be committed. If there are unstaged changes, ask the user wha
 
 ### If project has `pr-draft` skill
 
-Delegate to the project's `pr-draft` skill. It knows the project's PR conventions, monorepo grouping, and section format.
+Delegate to the project's `pr-draft` skill. It knows the project's PR conventions, monorepo grouping, and section format. Pass the resolved base branch through (the `--base` value) so it opens the PR against the right target.
 
 > Delegating to `pr-draft` for PR creation...
 
@@ -123,9 +132,9 @@ Create the PR directly:
 4. **Ask about PR status:**
    > Create as **draft** or **ready for review**?
 
-5. **Create the PR:**
+5. **Create the PR** (target the resolved `$BASE` branch):
    ```bash
-   gh pr create --title "<title>" --body "<body>" [--draft]
+   gh pr create --title "<title>" --body "<body>" --base "$BASE" [--draft]
    ```
 
 ## Phase 2: Clean Up
